@@ -53,7 +53,6 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag=Fal
 
         euclid_grad = grad(pairwise_distance, argnums=0)(Y, X_set, optimiser.manifold.distance, weights)
 
-        print(f"euclid grad {euclid_grad}")
         Y = optimiser.step(Y, euclid_grad)
 
         if plot_loss_flag:
