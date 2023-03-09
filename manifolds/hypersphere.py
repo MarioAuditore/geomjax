@@ -5,19 +5,7 @@ Functions for Hypersphere manifold
 # Base of math operations and derivatives
 from jax import numpy as jnp
 # General functions for manifolds
-from geomjax.manifolds.utils import Manifold
-
-
-class Hypersphere(Manifold):
-    """
-    Hypersphere - a set of points with equal norms
-    """
-    def __init__(self):
-        self.projection = projection
-        self.retraction = retraction
-        self.distance = arctan_distance
-
-
+from geomjax.manifolds.utils import Manifold, tree_util
 
 
 def projection(x, s):
@@ -70,3 +58,18 @@ def arccos_distance(A, B, ord = 1):
         return 0
     else:
         return jnp.arccos(angle) ** ord
+    
+
+class Hypersphere(Manifold):
+    """
+    Hypersphere - a set of points with equal norms
+    """
+    def __init__(self, projection = projection, retraction = retraction, distance = arctan_distance):
+        self.projection = projection
+        self.retraction = retraction
+        self.distance = distance
+
+
+tree_util.register_pytree_node(Hypersphere,
+                               Hypersphere._tree_flatten,
+                               Hypersphere._tree_unflatten)

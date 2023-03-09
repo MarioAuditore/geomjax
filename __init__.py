@@ -6,3 +6,4 @@
 
 from geomjax import manifolds
 from geomjax import implicit_mean
+from geomjax import optim
