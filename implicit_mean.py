@@ -59,8 +59,6 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag=Fal
 
         Y = optimiser.step(Y, euclid_grad)
 
-        print(f"loss: {loss} | euc")
-
         if plot_loss_flag:
             # collect loss for plotting
             plot_loss.append(loss)
