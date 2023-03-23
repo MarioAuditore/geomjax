@@ -12,21 +12,24 @@ def projection(x, s):
     """
     Projection from ambient space to tangent space at x
     x - point on a sphere
-    s - point from ambient space
+    s - vector from ambient space
     """
     # Get normal vector as radius
     n = x / jnp.linalg.norm(x)
     # Find projection
     return s - jnp.dot(s - x, n) * n 
+    # return s - jnp.dot(s, n) * n 
 
 
 def retraction(x, a):
     """
     Central projection on sphere surface
     x - point on a sphere
-    a - point from tangent space at x
+    a - vector from tangent space at x
     """
-    return a * (jnp.linalg.norm(x) / jnp.linalg.norm(a))
+    # step forward
+    p = x + a
+    return p * (jnp.linalg.norm(x) / jnp.linalg.norm(p))
   
 
 def arctan_distance(A, B):

@@ -15,8 +15,7 @@ def euclidean_distance(A, B):
     B : point from Euclidean space
     ord : resulting value will be powered by this parameter
     """
-    squared_dist = jnp.inner(A - B, A - B).squeeze()
-    return jnp.square(squared_dist)
+    return jnp.linalg.norm(A - B)
 
 
 
@@ -39,6 +38,14 @@ class Euclidean(Manifold):
             self.retraction = retraction
         
         self.distance = distance
+    
+    def step_forward(self, base, direction):
+        """
+        Optimization step on manifold
+        base : point from the manifold
+        direction : gradient descent direction
+        """
+        return self.retract(base, base + direction)
 
 tree_util.register_pytree_node(Euclidean,
                                Euclidean._tree_flatten,

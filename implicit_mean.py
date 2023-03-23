@@ -11,6 +11,8 @@ from jax import grad, jacobian, custom_vjp
 from jax import random
 # Jax functions for jit
 from functools import partial
+# Vectorization
+from jax import vmap
 
 import numpy as np
 
@@ -43,8 +45,8 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag=Fal
     if plot_loss_flag:
         plot_loss = []
 
-    # init mean with random element from set
-    Y = X_set[np.random.randint(0, X_set.shape[0], (1,))][0]
+    # init mean with random element from set and move it a bit
+    Y = X_set[np.random.randint(0, X_set.shape[0], (1,))][0] + 1e-7
 
     for i in range(optimiser.maxiter):
 
@@ -53,7 +55,11 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag=Fal
 
         euclid_grad = grad(pairwise_distance, argnums=0)(Y, X_set, optimiser.manifold.distance, weights)
 
+        riem_grad = optimiser.manifold.project(Y, euclid_grad)
+
         Y = optimiser.step(Y, euclid_grad)
+
+        print(f"loss: {loss} | euc")
 
         if plot_loss_flag:
             # collect loss for plotting
@@ -85,15 +91,22 @@ def weighted_mean_implicit_derivative(x, X, w, manifold):
     d2xy = jnp.squeeze(jacobian(dy_projected, argnums=1)(x, X, w))  # (2, 22, 2)
     d2wy = jnp.squeeze(jacobian(dy_projected, argnums=2)(x, X, w))  # (2, 22)
 
-    
+    def grad_multiply_inverse(dyy_inv, d_mixed):
+      return -dyy_inv @ d_mixed
 
-    for i in range(X.shape[0]):
-        # broadcast ainsum опробовать
-        d2xy = d2xy.at[:, i].set(-d2yy_inv @ d2xy[:, i])  # (2, 2) @ (2, 2)
-        # приходится добавить x
-        d2wy = d2wy.at[:, i].set(-d2yy_inv @ d2wy[:, i])
+    grad_multiply_inverse_batch = vmap(grad_multiply_inverse, (None, 1), 1)
 
-    return d2xy, d2wy
+    dfdx = grad_multiply_inverse_batch(d2yy_inv, d2xy)
+    dfdw = grad_multiply_inverse_batch(d2yy_inv, d2wy)
+
+    return dfdx, dfdw
+    # for i in range(X.shape[0]):
+    #     # broadcast ainsum опробовать
+    #     d2xy = d2xy.at[:, i].set(-d2yy_inv @ d2xy[:, i])  # (2, 2) @ (2, 2)
+    #     # приходится добавить x
+    #     d2wy = d2wy.at[:, i].set(-d2yy_inv @ d2wy[:, i])
+
+    # return d2xy, d2wy
 
 
 @partial(custom_vjp, nondiff_argnums=(2,3))
@@ -111,7 +124,6 @@ def weighted_mean_fwd(X, w, optimiser, plot_loss_flag=False):
 
 
 def weighted_mean_bwd(optimiser, plot_loss_flag, res, g):
-    print(f"DEBUG implicit mean gradient called \n g:{g}")
     x, X, w, manifold = res  # Gets residuals computed in f_fwd
     grad_X, grad_w = weighted_mean_implicit_derivative(x, X, w, manifold)
 
@@ -122,63 +134,3 @@ def weighted_mean_bwd(optimiser, plot_loss_flag, res, g):
 
 
 weighted_mean.defvjp(weighted_mean_fwd, weighted_mean_bwd)
-
-
-'''
-def gradient_descend_weighted_mean(init_mean=None, X_set=None, weights=None, manifold=None, lr=1e-3, n_iter=100, plot_loss_flag=False):
-    """
-    Weighted mean calculation as an optimization problem:
-    find point, which minimises pairwise distances in the given set of points
-    """
-
-    if X_set == None:
-        print("No data provided")
-        return None
-
-    if manifold == None:
-        print("No manifold provided")
-        return None
-
-    if init_mean == None:
-        # init mean with random element from set
-        key, subkey = random.split(KEY)
-        Y = X_set[random.randint(key, (1,), 0, X_set.shape[0])].squeeze()
-    else:
-        Y = init_mean
-
-    # if no weights are provided, they are the same
-    if weights == None:
-        weights = jnp.ones(X_set.shape[0]) / X_set.shape[0]
-
-    # array to plot loss
-    if plot_loss_flag:
-        plot_loss = []
-
-    for i in range(n_iter):
-
-        # calculate loss
-        loss = pairwise_distance(Y, X_set, manifold, weights)
-
-        # find gradient
-        Y_grad = grad(pairwise_distance, argnums=0)(Y, X_set, manifold, weights)
-
-        # calculate Riemannian gradient as local projection 
-        # of ordinary gradient onto the tangent space of the manifold
-        riem_grad_Y = manifold.project(Y, Y_grad)
-
-        # update Y
-        Y = manifold.step_forward(Y, -lr * riem_grad_Y)
-
-        if plot_loss_flag:
-            # collect loss for plotting
-            plot_loss.append(loss)
-
-    if plot_loss_flag:
-        print(f"Total loss: {pairwise_distance(Y, X_set, manifold, weights)}")
-        fig, ax = plt.subplots()
-        ax.plot(plot_loss)
-        ax.set_xlabel("Iteration")
-        ax.set_ylabel("Loss")
-        plt.show()
-    return Y
-'''

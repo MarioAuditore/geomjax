@@ -21,12 +21,18 @@ import matplotlib.pyplot as plt
 '''
 
 class GeometricOptimiser():
-    def __init__(self, lr, maxiter, manifold):
+    def __init__(self, lr, maxiter, manifold, lr_reducer = None):
         
         self.lr = lr
         self.maxiter = maxiter
         self.manifold = manifold
+        self.lr_reducer = lr_reducer
 
+    def decrease_lr(self):
+        if self.lr_reducer:
+            return self.lr * self.lr_reducer
+        else:
+            return self.lr
 
 class GradientDescent(GeometricOptimiser):
     
@@ -36,4 +42,37 @@ class GradientDescent(GeometricOptimiser):
         # Tangent projection for Riemannian gradient
         riem_grad = self.manifold.project(param, euclid_grad)
         # Update param
-        return self.manifold.step_forward(param, -self.lr * riem_grad)
+        param_updated = self.manifold.step_forward(param, -self.lr * riem_grad)
+        # Update learning rate
+        self.lr = self.decrease_lr()
+        # Return result
+        return param_updated
+
+
+class MomentumGrad(GeometricOptimiser):
+    
+    def __init__(self, lr, gamma, maxiter, manifold, lr_reducer = None):
+        
+        self.lr = lr
+        self.gamma = gamma
+        self.maxiter = maxiter
+        self.manifold = manifold
+        self.lr_reducer = lr_reducer
+        self.momentum = None
+
+    @partial(jit, static_argnums=(0,))
+    def step(self, param, euclid_grad):
+        
+        # Tangent projection for Riemannian gradient
+        riem_grad = self.manifold.project(param, euclid_grad)
+        # Add momentum
+        if self.momentum:
+            total_grad = riem_grad + self.gamma * self.momentum
+        else:
+            total_grad = riem_grad
+        # Update param
+        param_updated = self.manifold.step_forward(param, -self.lr * total_grad)
+        # Update learning rate
+        self.lr = self.decrease_lr()
+        # Return result
+        return param_updated

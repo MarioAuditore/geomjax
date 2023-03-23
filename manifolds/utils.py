@@ -73,7 +73,8 @@ class Manifold():
         base : point from the manifold
         direction : gradient descent direction
         """
-        return self.retract(base, base + direction)
+        # return self.retract(base, base + direction)
+        return self.retract(base, direction)
     
     def _tree_flatten(self):
         children = ()  # arrays / dynamic values
@@ -102,6 +103,4 @@ def pairwise_distance(Y, X_set, metric, weights = None, ord = 2):
     if weights == None:
         return jnp.mean(distances)
     else:
-        return jnp.mean(jnp.inner(weights, distances).squeeze() / jnp.sum(weights))
-
-
+        return jnp.inner(weights, distances).squeeze() / jnp.sum(weights)
