@@ -2,10 +2,16 @@
 Functions for Hypersphere manifold
 """
 
+# For proper backprop with custom classes
+# =======================================
+# Source: https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
+# Source: https://www.kaggle.com/code/aakashnain/tf-jax-tutorials-part-10-pytrees-in-jax
+from jax import tree_util
+
 # Base of math operations and derivatives
 from jax import numpy as jnp
 # General functions for manifolds
-from geomjax.manifolds.utils import Manifold, tree_util
+from geomjax.manifolds.utils import Manifold
 
 
 def projection(x, s):

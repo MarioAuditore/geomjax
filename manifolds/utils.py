@@ -2,12 +2,6 @@
 General functions for all manifolds
 """
 
-# For proper backprop with custom classes
-# =======================================
-# Source: https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
-# Source: https://www.kaggle.com/code/aakashnain/tf-jax-tutorials-part-10-pytrees-in-jax
-from jax import tree_util
-
 # For defining static arguments and non diff arguments
 # ====================================================
 # Source: https://jax.readthedocs.io/en/latest/_autosummary/jax.jit.html
@@ -66,15 +60,15 @@ class Manifold():
         """
         return self.distance(X, Y)
 
-    @jit
-    def step_forward(self, base, direction):
-        """
-        Optimization step on manifold
-        base : point from the manifold
-        direction : gradient descent direction
-        """
-        # return self.retract(base, base + direction)
-        return self.retract(base, direction)
+    # @jit
+    # def step_forward(self, base, direction):
+    #     """
+    #     Optimization step on manifold
+    #     base : point from the manifold
+    #     direction : gradient descent direction
+    #     """
+    #     # return self.retract(base, base + direction)
+    #     return self.retract(base, direction)
     
     def _tree_flatten(self):
         children = ()  # arrays / dynamic values
@@ -86,11 +80,7 @@ class Manifold():
     @classmethod
     def _tree_unflatten(cls, aux_data, children):
         return cls(*children, **aux_data)
-    
 
-# tree_util.register_pytree_node(Manifold,
-#                                Manifold._tree_flatten,
-#                                Manifold._tree_unflatten)
 
 
 @partial(jit, static_argnames=['metric', 'ord'])

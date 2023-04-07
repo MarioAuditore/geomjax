@@ -2,10 +2,16 @@
 Functions for Euclidean space
 """
 
+# For proper backprop with custom classes
+# =======================================
+# Source: https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
+# Source: https://www.kaggle.com/code/aakashnain/tf-jax-tutorials-part-10-pytrees-in-jax
+from jax import tree_util
+
 # Base of math operations and derivatives
 from jax import numpy as jnp
 # General functions for manifolds
-from geomjax.manifolds.utils import Manifold, tree_util
+from geomjax.manifolds.utils import Manifold
 
 
 def euclidean_distance(A, B):
@@ -18,13 +24,15 @@ def euclidean_distance(A, B):
     return jnp.linalg.norm(A - B)
 
 
+def retraction(m , s):
+    return m + s
 
 class Euclidean(Manifold):
     """
     Euclidean space - ordinary space 
     where retraction and projection operations are identity operation
     """
-    def __init__(self, projection = None, retraction = None, distance = euclidean_distance):
+    def __init__(self, projection = None, retraction = retraction, distance = euclidean_distance):
         identity = lambda m, s : s
         
         if projection == None:
@@ -32,20 +40,17 @@ class Euclidean(Manifold):
         else:
             self.projection = projection
 
-        if retraction == None:
-            self.retraction = identity
-        else:
-            self.retraction = retraction
+        self.retraction = retraction
         
         self.distance = distance
     
-    def step_forward(self, base, direction):
-        """
-        Optimization step on manifold
-        base : point from the manifold
-        direction : gradient descent direction
-        """
-        return self.retract(base, base + direction)
+    # def step_forward(self, base, direction):
+    #     """
+    #     Optimization step on manifold
+    #     base : point from the manifold
+    #     direction : gradient descent direction
+    #     """
+    #     return self.retract(base, base + direction)
 
 tree_util.register_pytree_node(Euclidean,
                                Euclidean._tree_flatten,

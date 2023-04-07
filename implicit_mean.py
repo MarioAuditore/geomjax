@@ -55,8 +55,6 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag=Fal
 
         euclid_grad = grad(pairwise_distance, argnums=0)(Y, X_set, optimiser.manifold.distance, weights)
 
-        riem_grad = optimiser.manifold.project(Y, euclid_grad)
-
         Y = optimiser.step(Y, euclid_grad)
 
         if plot_loss_flag:
@@ -84,13 +82,14 @@ def weighted_mean_implicit_derivative(x, X, w, manifold):
     dy_projected = lambda x, X, w: manifold.project(x, dy(x, X, manifold.distance, w))  # новая строчка (проекция)
 
     d2yy = jnp.squeeze(jacobian(dy_projected, argnums=0)(x, X, w))
+    # d2yy = manifold.project(x, jnp.squeeze(jacobian(dy_projected, argnums=0)(x, X, w)))
     d2yy_inv = jnp.linalg.inv(d2yy)
 
     d2xy = jnp.squeeze(jacobian(dy_projected, argnums=1)(x, X, w))  # (2, 22, 2)
     d2wy = jnp.squeeze(jacobian(dy_projected, argnums=2)(x, X, w))  # (2, 22)
 
     def grad_multiply_inverse(dyy_inv, d_mixed):
-      return -dyy_inv @ d_mixed
+        return -dyy_inv @ d_mixed
 
     grad_multiply_inverse_batch = vmap(grad_multiply_inverse, (None, 1), 1)
 
@@ -105,6 +104,43 @@ def weighted_mean_implicit_derivative(x, X, w, manifold):
     #     d2wy = d2wy.at[:, i].set(-d2yy_inv @ d2wy[:, i])
 
     # return d2xy, d2wy
+
+
+def weighted_mean_implicit_matrix_derivative(x, X, w, manifold):
+    """
+    Computation of the derivative for the weighted mean
+    """
+
+    dy = grad(pairwise_distance, argnums=0)
+    dy_projected = lambda x, X, w: manifold.project(x, dy(x, X, manifold.distance, w))  
+    dy_projected_trace = lambda x, X, w: jnp.trace(manifold.project(x, dy(x, X, manifold.distance, w)))  
+
+    d2yy = jnp.squeeze(jacobian(dy_projected_trace, argnums=0)(x, X, w))
+    # d2yy = manifold.project(x, jnp.squeeze(jacobian(dy_projected_trace, argnums=0)(x, X, w)))
+    d2yy_inv = jnp.linalg.inv(d2yy)
+
+    #print(f"d2yy {d2yy} and inv {d2yy_inv}")
+
+    d2xy = jnp.squeeze(jacobian(dy_projected_trace, argnums=1)(x, X, w))  # (10, 5, 5)
+    d2wy = jnp.squeeze(jacobian(dy_projected, argnums=2)(x, X, w)).swapaxes(-1, 0)  # (10, 5, 5)
+    
+    def grad_multiply_inverse(dyy_inv, d_mixed):
+        return -dyy_inv @ d_mixed
+
+    grad_multiply_inverse_batch = vmap(grad_multiply_inverse, (None, 0), 0)
+
+    dfdx = grad_multiply_inverse_batch(d2yy_inv, d2xy)
+    dfdw = grad_multiply_inverse_batch(d2yy_inv, d2wy)
+
+    return dfdx, dfdw
+    # for i in range(X.shape[0]):
+    #     # broadcast ainsum опробовать
+    #     d2xy = d2xy.at[:, i].set(-d2yy_inv @ d2xy[:, i])  # (2, 2) @ (2, 2)
+    #     # приходится добавить x
+    #     d2wy = d2wy.at[:, i].set(-d2yy_inv @ d2wy[:, i])
+
+    # return d2xy, d2wy
+
 
 
 @partial(custom_vjp, nondiff_argnums=(2,3))
@@ -123,12 +159,16 @@ def weighted_mean_fwd(X, w, optimiser, plot_loss_flag=False):
 
 def weighted_mean_bwd(optimiser, plot_loss_flag, res, g):
     x, X, w, manifold = res  # Gets residuals computed in f_fwd
-    grad_X, grad_w = weighted_mean_implicit_derivative(x, X, w, manifold)
-
-    out_X = grad_X.T @ g
-    out_w = grad_w.T @ g
-
-    return (out_X.T, out_w)
+    if len(x.shape) > 1:
+        grad_X, grad_w = weighted_mean_implicit_matrix_derivative(x, X, w, manifold)
+        out_X = grad_X @ g
+        out_w = jnp.trace(grad_w @ g, axis1=-2, axis2=-1)
+        return (out_X, out_w)
+    else:
+        grad_X, grad_w = weighted_mean_implicit_derivative(x, X, w, manifold)
+        out_X = grad_X.T @ g
+        out_w = grad_w.T @ g
+        return (out_X.T, out_w)
 
 
 weighted_mean.defvjp(weighted_mean_fwd, weighted_mean_bwd)
