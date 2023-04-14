@@ -32,13 +32,6 @@ def matrix_log(M):
     evals, evecs = jnp.linalg.eigh(M)
     evlog = jnp.log(evals)
     return evecs @ jnp.diag(evlog) @ evecs.T
-
-
-# Matrix exponent
-# def matrix_exp(M):
-#     evals, evecs = jnp.linalg.eigh(M)
-#     evexp = jnp.exp(evals)
-#     return evecs @ jnp.diag(evexp) @ evecs.T
     
 
 

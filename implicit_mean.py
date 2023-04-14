@@ -97,13 +97,6 @@ def weighted_mean_implicit_derivative(x, X, w, manifold):
     dfdw = grad_multiply_inverse_batch(d2yy_inv, d2wy)
 
     return dfdx, dfdw
-    # for i in range(X.shape[0]):
-    #     # broadcast ainsum опробовать
-    #     d2xy = d2xy.at[:, i].set(-d2yy_inv @ d2xy[:, i])  # (2, 2) @ (2, 2)
-    #     # приходится добавить x
-    #     d2wy = d2wy.at[:, i].set(-d2yy_inv @ d2wy[:, i])
-
-    # return d2xy, d2wy
 
 
 def weighted_mean_implicit_matrix_derivative(x, X, w, manifold):
@@ -133,13 +126,6 @@ def weighted_mean_implicit_matrix_derivative(x, X, w, manifold):
     dfdw = grad_multiply_inverse_batch(d2yy_inv, d2wy)
 
     return dfdx, dfdw
-    # for i in range(X.shape[0]):
-    #     # broadcast ainsum опробовать
-    #     d2xy = d2xy.at[:, i].set(-d2yy_inv @ d2xy[:, i])  # (2, 2) @ (2, 2)
-    #     # приходится добавить x
-    #     d2wy = d2wy.at[:, i].set(-d2yy_inv @ d2wy[:, i])
-
-    # return d2xy, d2wy
 
 
 
