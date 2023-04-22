@@ -58,21 +58,22 @@ class MomentumGrad(GeometricOptimiser):
         self.maxiter = maxiter
         self.manifold = manifold
         self.lr_reducer = lr_reducer
-        self.momentum = None
 
     @partial(jit, static_argnums=(0,))
-    def step(self, param, euclid_grad):
+    def step(self, param, euclid_grad, momentum=None):
         
         # Tangent projection for Riemannian gradient
         riem_grad = self.manifold.project(param, euclid_grad)
         # Add momentum
-        if self.momentum:
-            total_grad = riem_grad + self.gamma * self.momentum
-        else:
+        if momentum is None:
             total_grad = riem_grad
+        else:
+            total_grad = riem_grad + self.gamma * momentum
+        # Save momentum
+        momentum = total_grad
         # Update param
         param_updated = self.manifold.retract(param, -self.lr * total_grad)
         # Update learning rate
         self.lr = self.decrease_lr()
         # Return result
-        return param_updated
+        return param_updated, momentum

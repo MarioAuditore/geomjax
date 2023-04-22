@@ -1,0 +1,1 @@
+from geomjax.models import spdnet

@@ -7,7 +7,7 @@ Orthogonal matrices
 # =======================================
 # Source: https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
 # Source: https://www.kaggle.com/code/aakashnain/tf-jax-tutorials-part-10-pytrees-in-jax
-from jax import tree_util
+from jax import tree_util, random
 # Base of math operations and derivatives
 from jax import numpy as jnp
 # 
@@ -16,14 +16,16 @@ import numpy as np
 from geomjax.manifolds.utils import Manifold
 
 
+
 def generate_orthogonal(n, m):
     if n >= m:
         Q,_ = jnp.linalg.qr(np.random.randn(n, n))
         Q = Q[:m, :]
+        return Q.T
     else:
         Q,_ = jnp.linalg.qr(np.random.randn(m, m))
         Q = Q[:n, :]
-    return Q
+        return Q
 
 
 def projection_1(M, S):

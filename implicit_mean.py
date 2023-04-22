@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 
 
 # @implicit_diff.custom_root(grad(pairwise_distance))
-def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag=False):
+def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, maxiter):
     """
     Weighted mean calculation as an optimization problem:
     find point, which minimises pairwise distances in the given set of points
@@ -48,14 +48,16 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag=Fal
     # init mean with random element from set and move it a bit
     Y = X_set[np.random.randint(0, X_set.shape[0], (1,))][0] + 1e-7
 
-    for i in range(optimiser.maxiter):
+    momentum = None
+
+    for i in range(maxiter):
 
         # calculate loss
         loss = pairwise_distance(Y, X_set, optimiser.manifold.distance, weights)
 
         euclid_grad = grad(pairwise_distance, argnums=0)(Y, X_set, optimiser.manifold.distance, weights)
 
-        Y = optimiser.step(Y, euclid_grad)
+        Y, momentum = optimiser.step(Y, euclid_grad, momentum)
 
         if plot_loss_flag:
             # collect loss for plotting
@@ -129,21 +131,22 @@ def weighted_mean_implicit_matrix_derivative(x, X, w, manifold):
 
 
 
-@partial(custom_vjp, nondiff_argnums=(2,3))
-def weighted_mean(X, w, optimiser, plot_loss_flag=False):
+@partial(custom_vjp, nondiff_argnums=(2, 3, 4))
+def weighted_mean(X, w, optimiser, plot_loss_flag=False, maxiter=200):
     return gradient_descend_weighted_mean(X_set=X, 
                                           weights=w, 
                                           optimiser=optimiser, 
-                                          plot_loss_flag=plot_loss_flag)
+                                          plot_loss_flag=plot_loss_flag,
+                                          maxiter=maxiter)
 
 
-def weighted_mean_fwd(X, w, optimiser, plot_loss_flag=False):
+def weighted_mean_fwd(X, w, optimiser, plot_loss_flag, maxiter):
     # Returns primal output and residuals to be used in backward pass by f_bwd.
-    x = weighted_mean(X, w, optimiser, plot_loss_flag)
+    x = weighted_mean(X, w, optimiser, plot_loss_flag, maxiter)
     return x, (x, X, w, optimiser.manifold)
 
 
-def weighted_mean_bwd(optimiser, plot_loss_flag, res, g):
+def weighted_mean_bwd(optimiser, plot_loss_flag, maxiter, res, g):
     x, X, w, manifold = res  # Gets residuals computed in f_fwd
     if len(x.shape) > 1:
         grad_X, grad_w = weighted_mean_implicit_matrix_derivative(x, X, w, manifold)
