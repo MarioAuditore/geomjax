@@ -32,7 +32,7 @@ class Euclidean(Manifold):
     Euclidean space - ordinary space 
     where retraction and projection operations are identity operation
     """
-    def __init__(self, projection = None, retraction = retraction, distance = euclidean_distance):
+    def __init__(self, projection = None, retraction = retraction, distance = euclidean_distance, random_generator = None):
         identity = lambda m, s : s
         
         if projection == None:
@@ -43,6 +43,9 @@ class Euclidean(Manifold):
         self.retraction = retraction
         
         self.distance = distance
+
+        self.key = None
+        self.random_generator = random_generator
     
     # def step_forward(self, base, direction):
     #     """

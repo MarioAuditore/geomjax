@@ -73,10 +73,13 @@ class Hypersphere(Manifold):
     """
     Hypersphere - a set of points with equal norms
     """
-    def __init__(self, projection = projection, retraction = retraction, distance = arctan_distance):
+    def __init__(self, projection = projection, retraction = retraction, distance = arctan_distance, random_generator = None):
         self.projection = projection
         self.retraction = retraction
         self.distance = distance
+
+        self.key = None
+        self.random_generator = random_generator
 
 
 tree_util.register_pytree_node(Hypersphere,

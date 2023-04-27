@@ -14,6 +14,7 @@ from jax import numpy as jnp
 from jax import scipy as sp
 # General functions for manifolds
 from geomjax.manifolds.utils import Manifold
+from sklearn.datasets import make_spd_matrix
 
 
 # Matrix operations
@@ -80,10 +81,16 @@ class SPD(Manifold):
     """
     SPD - manifold of symmetric positive definite matrices
     """
-    def __init__(self, projection = projection, retraction = retraction, distance = log_euclidean_metric):
+    def __init__(self, projection = projection, retraction = retraction, distance = log_euclidean_metric, random_generator = make_spd_matrix):
         self.projection = projection
         self.retraction = retraction
         self.distance = distance
+
+        self.random_generator = random_generator
+
+    def generate(self, *args):
+        n = args[0]
+        return self.random_generator(n)
 
 
 tree_util.register_pytree_node(SPD,

@@ -11,19 +11,20 @@ from jax import tree_util, random
 # Base of math operations and derivatives
 from jax import numpy as jnp
 # 
-import numpy as np
+from jax import random
 # General functions for manifolds
 from geomjax.manifolds.utils import Manifold
 
 
 
-def generate_orthogonal(n, m):
+def generate_orthogonal(key, n, m):
+    
     if n >= m:
-        Q,_ = jnp.linalg.qr(np.random.randn(n, n))
+        Q,_ = jnp.linalg.qr(random.uniform(key, shape=(n, n)))
         Q = Q[:m, :]
         return Q.T
     else:
-        Q,_ = jnp.linalg.qr(np.random.randn(m, m))
+        Q,_ = jnp.linalg.qr(random.uniform(key, shape=(m, m)))
         Q = Q[:n, :]
         return Q
 
@@ -88,10 +89,13 @@ class Stiefel(Manifold):
     """
     SPD - manifold of symmetric positive definite matrices
     """
-    def __init__(self, projection = projection_1, retraction = retraction_svd, distance = distance):
+    def __init__(self, projection = projection_1, retraction = retraction_svd, distance = distance, random_generator = generate_orthogonal):
         self.projection = projection
         self.retraction = retraction
         self.distance = distance
+
+        self.key = random.PRNGKey(1234)
+        self.random_generator = random_generator
 
 
 tree_util.register_pytree_node(Stiefel,

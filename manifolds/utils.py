@@ -11,6 +11,7 @@ from functools import partial
 from jax import numpy as jnp
 # For batch functions
 from jax import vmap, jit
+from jax import random
 
 
 
@@ -19,7 +20,7 @@ class Manifold():
     """
     Base class for Manifolds.
     """
-    def __init__(self, projection, retraction, distance):
+    def __init__(self, projection, retraction, distance, random_generator = None):
         """
         projection : callable
             Local projection from ambient space to tangent space
@@ -31,6 +32,9 @@ class Manifold():
         self.projection = projection
         self.retraction = retraction
         self.distance = distance
+
+        self.key = random.PRNGKey(1234)
+        self.random_generator = random_generator
 
     @jit
     def project(self, M, S):
@@ -60,21 +64,18 @@ class Manifold():
         """
         return self.distance(X, Y)
 
-    # @jit
-    # def step_forward(self, base, direction):
-    #     """
-    #     Optimization step on manifold
-    #     base : point from the manifold
-    #     direction : gradient descent direction
-    #     """
-    #     # return self.retract(base, base + direction)
-    #     return self.retract(base, direction)
+    
+    def generate(self, *args):
+        self.key,_ = random.split(self.key)
+        return self.random_generator(self.key, *args)
+
     
     def _tree_flatten(self):
         children = ()  # arrays / dynamic values
         aux_data = {'projection': self.projection, 
                     'retraction': self.retraction, 
-                    'distance': self.distance}  # static values
+                    'distance': self.distance,
+                    'random_generator': self.random_generator}  # static values
         return (children, aux_data)
 
     @classmethod

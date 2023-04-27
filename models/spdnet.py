@@ -66,7 +66,6 @@ class MultiMapLayer(nn.Module):
             oper_2 = vmap(lambda X, w: X @ w, (0, None), 0)
             return oper_2(oper_1(w, X), w)
         
-        gen_key = random.PRNGKey(0)
         submanifold_maps = self.param('Matrix',
                                     self.params_init, # Initialization function for Orthogonal matrix
                                     self.n_submanifolds, inputs.shape[-1], self.out_dim)  # shape info.
@@ -77,14 +76,16 @@ class MultiMapLayer(nn.Module):
         return y
 
 
+
 class ReEigLayer(nn.Module):
-    threschold: int
+    threschold: int = 1e-5
 
     @nn.compact
     def __call__(self, inputs):
+        
         def reeig(M):
             evals, evecs = jnp.linalg.eigh(M)
-            evals = jnp.maximum(evals, self.threschold)
+            new_evals = jnp.maximum(evals, self.threschold)
             return evecs @ jnp.diag(evals) @ evecs.T
         
         if len(inputs.shape) > 2:
@@ -129,6 +130,7 @@ class Triu(nn.Module):
 class SPDAvgPooling(nn.Module):
     optimiser: Any
     maxiter: int = 100
+    debug: bool = False
     weights_init: Callable = nn.initializers.uniform()
 
     @nn.compact
@@ -136,7 +138,7 @@ class SPDAvgPooling(nn.Module):
         weights = self.param('weights', self.weights_init, (inputs.shape[-3], ))  # shape info.
         if len(inputs.shape) > 3:
             def vectorized(inputs):
-                return weighted_mean(inputs, weights, self.optimiser, maxiter=self.maxiter)
+                return weighted_mean(inputs, weights, self.optimiser, maxiter=self.maxiter, debug=self.debug)
             y = vmap(vectorized)(inputs)
         else:
             y = weighted_mean(inputs, weights, self.optimiser, maxiter=self.maxiter)
