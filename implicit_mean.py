@@ -12,7 +12,7 @@ from jax import random
 # Jax functions for jit
 from functools import partial
 # Vectorization
-from jax import vmap
+from jax import vmap, lax
 
 import numpy as np
 
@@ -47,15 +47,17 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, ma
 
     key,_ = random.split(random.PRNGKey(0))
     # init mean with random element from set and move it a bit
-    if optimiser.manifold.random_generator is None:
-        if len(X_set.shape) > 2:
-            Y = X_set[np.random.randint(0, X_set.shape[0], (1,))][0] + jnp.abs(random.uniform(key, shape=(X_set.shape[-1],)) * 1e-7)
-        else:
-            Y = X_set[np.random.randint(0, X_set.shape[0], (1,))][0] + 1e-7
+    if len(X_set.shape) > 2:
+        Y = X_set[np.random.randint(0, X_set.shape[0], (1,))][0] + jnp.abs(random.uniform(key, shape=(X_set.shape[-1],)) * 1e-4)
     else:
-        Y = optimiser.manifold.generate(X_set.shape[-2], X_set.shape[-1])
+        Y = X_set[np.random.randint(0, X_set.shape[0], (1,))][0] + 1e-4
 
     optim_state = None
+    
+    # Store statistics of gradients
+    grad_norm_stats = []
+    n_observations = 20
+    average_grad = None
 
     for i in range(maxiter):
 
@@ -67,8 +69,18 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, ma
 
         euclid_grad = grad(pairwise_distance, argnums=0)(Y, X_set, optimiser.manifold.distance, weights)
 
-        euclid_grad = euclid_grad / jnp.linalg.norm(euclid_grad)
-
+        # Gradient clipping
+        # Collect norms
+        if i < n_observations:
+            grad_norm_stats.append(jnp.linalg.norm(euclid_grad))
+        # Get the average norm
+        elif i == n_observations:
+            average_grad = jnp.mean(jnp.array(grad_norm_stats))
+        # Clip gradients if their norm is above average
+        else:
+            norm_buf = jnp.linalg.norm(euclid_grad)
+            euclid_grad = lax.cond(norm_buf > average_grad, lambda euclid_grad: average_grad * euclid_grad / norm_buf, lambda euclid_grad: euclid_grad, euclid_grad)
+                
         if debug:
             print(f"Euclid grad norm:{jnp.linalg.norm(euclid_grad)}")
 
