@@ -29,9 +29,7 @@ class GeometricOptimiser():
 
     def decrease_lr(self):
         if self.lr_reducer:
-            return self.lr * self.lr_reducer
-        else:
-            return self.lr
+            self.lr *= self.lr_reducer
 
 class GradientDescent(GeometricOptimiser):
     
@@ -43,7 +41,7 @@ class GradientDescent(GeometricOptimiser):
         # Update param
         param_updated = self.manifold.retract(param, -self.lr * riem_grad)
         # Update learning rate
-        self.lr = self.decrease_lr()
+        self.decrease_lr()
         # Return result
         return param_updated
 
@@ -65,17 +63,19 @@ class MomentumGrad(GeometricOptimiser):
         
         # Tangent projection for Riemannian gradient
         riem_grad = self.manifold.project(param, euclid_grad)
+        
         # Add momentum
         if state is None:
+            state = {}
             total_grad = -self.lr * riem_grad
         else:
             total_grad = -self.lr * riem_grad + self.gamma * state['momentum']
+        
         # Save momentum
-        state = {}
         state['momentum'] = total_grad
         # Update param
         param_updated = self.manifold.retract(param, total_grad)
         # Update learning rate
-        self.lr = self.decrease_lr()
+        self.decrease_lr()
         # Return result
         return param_updated, state

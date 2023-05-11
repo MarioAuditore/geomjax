@@ -55,13 +55,6 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, ma
         Y = X_set[np.random.randint(0, X_set.shape[0], (1,))][0] + 1e-4
 
     optim_state = None
-
-    # Init gradient clipping
-    grad_clipper = optax.adaptive_grad_clip(5.0)
-    clipper_state = grad_clipper.init(Y)
-    
-    # Store statistics of gradients
-    grad_norm_stats = []
     
     average_grad = None
 
@@ -70,16 +63,21 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, ma
         # calculate loss
         loss = pairwise_distance(Y, X_set, optimiser.manifold.distance, weights)
 
-        if debug:
-            print(f"Iter {i} | loss = {loss}")
-
+        # compute gradient
         euclid_grad = grad(pairwise_distance, argnums=0)(Y, X_set, optimiser.manifold.distance, weights)
 
-        # Gradient clipping
-        euclid_grad, clipper_state = grad_clipper.update(euclid_grad, clipper_state, Y)
-                
         if debug:
-            print(f"Euclid grad norm:{jnp.linalg.norm(euclid_grad)}")
+            print(f"Iter {i} | loss = {loss}")
+            print(f"Euclid grad norm:{jnp.linalg.norm(euclid_grad)} | grad / param: {jnp.linalg.norm(euclid_grad) / jnp.linalg.norm(Y)}")
+
+        # Gradient clipping
+        if i == 0:
+            # Init gradient clipping on first iteration
+            grad_clipper = optax.adaptive_grad_clip(jnp.linalg.norm(euclid_grad) / jnp.linalg.norm(Y))
+            clipper_state = grad_clipper.init(Y)
+        else:
+            # apply clipping
+            euclid_grad, clipper_state = grad_clipper.update(euclid_grad, clipper_state, Y)
 
         Y, optim_state = optimiser.step(Y, euclid_grad, optim_state)
 
