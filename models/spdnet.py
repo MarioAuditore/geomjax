@@ -208,6 +208,7 @@ class SPDAvgPooling(nn.Module):
     @nn.compact
     def __call__(self, inputs):
         weights = self.param('weights', self.weights_init, (inputs.shape[-3], ))  # shape info.
+        # weights = jnp.maximum(weights, 1 / (inputs.shape[-3] + 1e-7))
         if len(inputs.shape) > 3:
             def vectorized(inputs):
                 return weighted_mean(inputs, weights, self.optimiser, maxiter=self.maxiter, debug=self.debug)

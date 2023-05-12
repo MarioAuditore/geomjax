@@ -94,4 +94,4 @@ def pairwise_distance(Y, X_set, metric, weights = None, ord = 2):
     if weights == None:
         return jnp.mean(distances)
     else:
-        return jnp.inner(weights, distances).squeeze() / jnp.sum(weights)
+        return jnp.inner(weights, distances).squeeze() 
