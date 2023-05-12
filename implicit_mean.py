@@ -120,7 +120,7 @@ def weighted_mean_implicit_derivative(x, X, w, manifold):
 
     grad_multiply_inverse_batch = vmap(grad_multiply_inverse, (None, 1), 1)
 
-    dfdx = grad_multiply_inverse_batch(d2yy_inv, d2xy)
+    dfdx = grad_multiply_inverse_batch(d2yy_inv, d2xy) # (2, 22, 2)
     dfdw = grad_multiply_inverse_batch(d2yy_inv, d2wy)
 
     return dfdx, dfdw

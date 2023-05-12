@@ -7,7 +7,7 @@ Symmetric Positive Definite matrices
 # =======================================
 # Source: https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
 # Source: https://www.kaggle.com/code/aakashnain/tf-jax-tutorials-part-10-pytrees-in-jax
-from jax import tree_util
+from jax import tree_util, lax
 
 # Base of math operations and derivatives
 from jax import numpy as jnp
@@ -31,7 +31,8 @@ def matrix_fractional_pow(M, power):
 # Matrix logarithm based on same idea as above
 def matrix_log(M):
     evals, evecs = jnp.linalg.eigh(M)
-    evlog = jnp.log(evals)
+    # to prevent from zeros in log
+    evlog = jnp.log(evals + 1e-17)
     return evecs @ jnp.diag(evlog) @ evecs.T
     
 
