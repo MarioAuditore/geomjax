@@ -23,6 +23,15 @@ def bimap_init(key, n, m):
 
 
 class BiMapLayer(nn.Module):
+    """
+    BiMapLayer - projects SPD matrix 
+    to one submanifold
+    
+    out_dim: dimention of submanifold
+    
+    learnable parameter: orthogonal matrix which projects 
+    SPD matrix to it's own submanifold
+    """
     out_dim: int
     matrix_init: Callable = bimap_init
 
@@ -54,6 +63,16 @@ def multimap_init(key, n_submanifolds, n, m):
 
 
 class MultiMapLayer(nn.Module):
+    """
+    MultiMapLayer - projects SPD matrix 
+    to multiple different submanifolds
+    
+    out_dim: dimention of submanifolds
+    n_submanifolds: number of submanifolds to project on
+    
+    learnable parameter: series of orthogonal matrices
+    which project SPD matrix to n_submanifolds submanifolds
+    """
     out_dim: int
     n_submanifolds: int
     params_init: Callable = multimap_init
@@ -76,8 +95,43 @@ class MultiMapLayer(nn.Module):
         return y
 
 
+class MultiBiMapLayer(nn.Module):
+    """
+    MultiBiMapLayer - projects a series of SPD matricies 
+    to their own unique submanifolds
+    
+    out_dim: dimention of submanifolds
+    
+    learnable parameter: series of orthogonal matrices
+    which project each SPD matrix to their own submanifold
+    """
+    out_dim: int
+    params_init: Callable = multimap_init
+
+    @nn.compact
+    def __call__(self, inputs):
+        
+        def quadratic_form(w, X):
+            oper_1 = vmap(lambda w, X: jnp.swapaxes(w, -1, -2) @ X, (-3, -3),-3 )
+            oper_2 = vmap(lambda X, w: X @ w, (-3, -3),-3 )
+            return oper_2(oper_1(w, X), w)
+        
+        submanifold_maps = self.param('Matrix',
+                                    self.params_init, # Initialization function for Orthogonal matrix
+                                    inputs.shape[-3], inputs.shape[-1], self.out_dim)  # shape info.
+        
+        y = quadratic_form(submanifold_maps, inputs)
+        
+        return y
+
+
 
 class ReEigLayer(nn.Module):
+    """
+    ReEigLayer: prevents from negative eigenvalues
+    on projected submanifolds by replacing them with threschold value, 
+    also plays role of non-linearity
+    """
     threschold: int = 1e-5
 
     @nn.compact
@@ -99,6 +153,10 @@ class ReEigLayer(nn.Module):
     
     
 class LogEigLayer(nn.Module):
+    """
+    ReEigLayer: last layer before switching from 
+    SPD matrix learning to euclidean neural network
+    """
     
     @nn.compact
     def __call__(self, inputs):
@@ -115,6 +173,10 @@ class LogEigLayer(nn.Module):
     
     
 class Triu(nn.Module):
+    """
+    Triu: converts SPD matrix to a vector
+    by taking upper triangular values
+    """
     
     @nn.compact
     def __call__(self, inputs):
@@ -128,6 +190,16 @@ class Triu(nn.Module):
 
 
 class SPDAvgPooling(nn.Module):
+    """
+    SPDAvgPooling: for a given set of SPD matricies
+    calculates their weighted mean
+
+    optimiser: geometric optimiser to be used for mean calculation
+    maxiter: max iteration for computing mean (default=100)
+    debug: printing out debug information to trace Nans
+    
+    learnable parameter: weights for mean
+    """
     optimiser: Any
     maxiter: int = 100
     debug: bool = False
