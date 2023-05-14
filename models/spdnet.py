@@ -141,7 +141,7 @@ class ReEigLayer(nn.Module):
         def reeig(M):
             evals, evecs = jnp.linalg.eigh(M)
             new_evals = jnp.maximum(evals, self.threschold)
-            return evecs @ jnp.diag(evals) @ evecs.T
+            return evecs @ jnp.diag(new_evals) @ evecs.T
         
         if len(inputs.shape) > 2:
             if len(inputs.shape) > 3:
