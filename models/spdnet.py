@@ -17,9 +17,10 @@ from geomjax.implicit_mean import weighted_mean
 
 
 def bimap_init(key, n, m):
-    Q,_ = jnp.linalg.qr(random.uniform(key, shape=(n, n)))
-    Q = Q[:m, :]
-    return Q.T
+    size = max(n, m)
+    Q,_ = jnp.linalg.qr(random.uniform(key, shape=(size, size)))
+    Q = Q[:n, :m]
+    return Q
 
 
 class BiMapLayer(nn.Module):
