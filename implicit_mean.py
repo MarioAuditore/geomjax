@@ -18,15 +18,8 @@ import optax
 
 import numpy as np
 
-# Implicit derivative
-# from jaxopt import implicit_diff
-
-KEY = random.PRNGKey(0)
-
 # Distance function
 from geomjax.manifolds.utils import pairwise_distance
-# Optimiser
-from geomjax.optim import GradientDescent
 # Plotting
 import matplotlib.pyplot as plt
 
@@ -54,7 +47,7 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, ma
     else:
         Y = X_set[np.random.randint(0, X_set.shape[0], (1,))][0] + 1e-4
 
-    optim_state = None
+    optim_state = optimiser.init(Y)
     
     average_grad = None
 
@@ -79,7 +72,7 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, ma
             # apply clipping
             euclid_grad, clipper_state = grad_clipper.update(euclid_grad, clipper_state, Y)
 
-        Y, optim_state = optimiser.step(Y, euclid_grad, optim_state)
+        Y, optim_state = optimiser.update(Y, euclid_grad, optim_state)
 
         if debug:
             print(f"Updated mean: {jnp.linalg.eigh(Y)[0]}")
