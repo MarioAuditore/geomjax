@@ -115,9 +115,7 @@ class GeometricOptimiser():
         return params, state
 
 
-        
-
-
+    
 
 '''
 Based on: https://medium.com/konvergen/momentum-method-and-nesterov-accelerated-gradient-487ba776c987
@@ -145,7 +143,7 @@ class MomentumGrad(GeometricOptimiser):
         riem_grad = self.manifold.project(param, euclid_grad)
         
         # Add momentum
-        total_grad = -self.lr * riem_grad + self.gamma * state['momentum']
+        total_grad = -self.lr * ((1 - self.gamma) * riem_grad + self.gamma * state['momentum'])
         
         # Save momentum
         state['momentum'] = total_grad
