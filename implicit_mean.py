@@ -147,24 +147,24 @@ def weighted_mean_implicit_matrix_derivative(x, X, w, manifold):
     # Vectorize
     grad_multiply_inverse_batch = vmap(grad_multiply_inverse, (None, 0), 0)
     # Find suitable for pmap amount of cores
-    # n_jobs = calc_n_jobs(X.shape[0])
+    n_jobs = calc_n_jobs(X.shape[0])
 
     # If there is no parallelisation option
-    # if n_jobs == 1:
-    dfdx = grad_multiply_inverse_batch(d2yy_inv, d2xy)
-    dfdw = grad_multiply_inverse_batch(d2yy_inv, d2wy)
-    # else:
-    #     # print(f"DEBUG: Derivative in parallel mode on {n_jobs} devices")
-    #     grad_multiply_inverse_batch_parallel = pmap(grad_multiply_inverse_batch, in_axes=(None, 0), out_axes=0)
-    #     # Split by jobs
-    #     d2xy_batched = parallelize_array(d2xy, n_jobs)
-    #     d2wy_batched = parallelize_array(d2wy, n_jobs)
-    #     # Parallel computation
-    #     dfdx_batched = grad_multiply_inverse_batch_parallel(d2yy_inv, d2xy_batched)
-    #     dfdw_batched = grad_multiply_inverse_batch_parallel(d2yy_inv, d2wy_batched)
-    #     # Merge results
-    #     dfdx = merge_parallel_results(dfdx_batched)
-    #     dfdw = merge_parallel_results(dfdw_batched)
+    if n_jobs == 1:
+        dfdx = grad_multiply_inverse_batch(d2yy_inv, d2xy)
+        dfdw = grad_multiply_inverse_batch(d2yy_inv, d2wy)
+    else:
+        # print(f"DEBUG: Derivative in parallel mode on {n_jobs} devices")
+        grad_multiply_inverse_batch_parallel = pmap(grad_multiply_inverse_batch, in_axes=(None, 0), out_axes=0)
+        # Split by jobs
+        d2xy_batched = parallelize_array(d2xy, n_jobs)
+        d2wy_batched = parallelize_array(d2wy, n_jobs)
+        # Parallel computation
+        dfdx_batched = grad_multiply_inverse_batch_parallel(d2yy_inv, d2xy_batched)
+        dfdw_batched = grad_multiply_inverse_batch_parallel(d2yy_inv, d2wy_batched)
+        # Merge results
+        dfdx = merge_parallel_results(dfdx_batched)
+        dfdw = merge_parallel_results(dfdw_batched)
 
     return dfdx, dfdw
 
@@ -189,25 +189,7 @@ def weighted_mean_fwd(X, w, optimiser, plot_loss_flag, maxiter, debug):
 def weighted_mean_bwd(optimiser, plot_loss_flag, maxiter, debug, res, g):
     x, X, w, manifold = res  # Gets residuals computed in f_fwd
     if len(x.shape) > 1:
-        n_jobs = calc_n_jobs(X.shape[0])
-        if n_jobs == 1:
-            grad_X, grad_w = weighted_mean_implicit_matrix_derivative(x, X, w, manifold)
-        else:
-            # print(f"DEBUG: Derivative in parallel mode on {n_jobs} devices")
-            # Make parallel versiob
-            weighted_mean_implicit_matrix_derivative_parallel = pmap(
-                lambda X, w: weighted_mean_implicit_matrix_derivative(x, X, w, manifold),
-                in_axes=(0, 0), 
-                out_axes=0)
-            # Split arrays by devices
-            X_batched = parallelize_array(X, n_jobs)
-            w_batched = parallelize_array(w, n_jobs)
-            # Compute
-            grad_X_batched, grad_w_batched = weighted_mean_implicit_matrix_derivative_parallel(X_batched, w_batched)
-            # Merge results
-            grad_X = merge_parallel_results(grad_X_batched)
-            grad_w = merge_parallel_results(grad_w_batched)
-
+        grad_X, grad_w = weighted_mean_implicit_matrix_derivative(x, X, w, manifold)
         out_X = grad_X @ g
         out_w = jnp.trace(grad_w @ g, axis1=-2, axis2=-1)
         return (out_X, out_w)

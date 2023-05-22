@@ -12,6 +12,7 @@ from jax import tree_util, lax
 # Base of math operations and derivatives
 from jax import numpy as jnp
 from jax import scipy as sp
+from jax import jit
 # General functions for manifolds
 from geomjax.manifolds.utils import Manifold
 from sklearn.datasets import make_spd_matrix
@@ -22,6 +23,7 @@ from sklearn.datasets import make_spd_matrix
 
 # Implementation of matrix fractional power for pytorch
 # https://discuss.pytorch.org/t/raising-a-tensor-to-a-fractional-power/93655/3
+@jit
 def matrix_fractional_pow(M, power):
     evals, evecs = jnp.linalg.eigh(M)
     evpow = evals ** power
@@ -29,6 +31,7 @@ def matrix_fractional_pow(M, power):
 
 
 # Matrix logarithm based on same idea as above
+@jit
 def matrix_log(M):
     evals, evecs = jnp.linalg.eigh(M)
     # to prevent from zeros in log
@@ -36,7 +39,7 @@ def matrix_log(M):
     return evecs @ jnp.diag(evlog) @ evecs.T
     
 
-
+@jit
 def projection(M, S):
     """
     Projection from ambient space to tangent space at x
@@ -46,6 +49,7 @@ def projection(M, S):
     return M @ (S + S.T) @ M / 2
 
 
+@jit
 def retraction(M, T):
     """
     Retraction from tangent space to manifold
@@ -60,18 +64,18 @@ def retraction(M, T):
 
     return M_half @ exp_res @ M_half
 
-
+@jit
 def affine_invariant_metric(X, Y):    
     X_neg_half = matrix_fractional_pow(X, -0.5)
     return jnp.linalg.norm(matrix_log(X_neg_half @ Y @ X_neg_half))
 
-
+@jit
 def stein_metric(X, Y):
     det_1 = jnp.linalg.det((X + Y) / 2)
     det_2 = jnp.linalg.det(X @ Y)
     return jnp.log(det_1) - jnp.log(det_2) / 2
 
-
+@jit
 def log_euclidean_metric(X, Y):
     log_X = matrix_log(X)
     log_Y = matrix_log(Y)
