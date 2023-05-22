@@ -86,6 +86,10 @@ class Manifold():
 
 @partial(jit, static_argnames=['metric', 'ord'])
 def pairwise_distance(Y, X_set, metric, weights = None, ord = 2):
+    '''
+    Function for weighted pairwise distanse from point Y to 
+    a set of points X_set
+    '''
     # make a batch-friendly version of distance function
     batch_distance = vmap(metric, (0, None), 0)
     # calculate pairwise distances

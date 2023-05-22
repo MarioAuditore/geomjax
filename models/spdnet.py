@@ -4,6 +4,9 @@ from jax import numpy as jnp
 from jax import random
 # for vectorization
 from jax import vmap
+# Parallelistaion
+from jax import pmap
+from geomjax.utils import calc_n_jobs, parallelize_array, merge_parallel_results
 
 # Defining data for class
 from typing import Any, Callable, Sequence
@@ -213,7 +216,13 @@ class SPDAvgPooling(nn.Module):
         if len(inputs.shape) > 3:
             def vectorized(inputs):
                 return weighted_mean(inputs, weights, self.optimiser, maxiter=self.maxiter, debug=self.debug)
+            # n_jobs = calc_n_jobs(inputs.shape[0])
+            # if n_jobs == 1:
             y = vmap(vectorized)(inputs)
+            # else:
+            #     inputs_batched = parallelize_array(inputs, n_jobs)
+            #     y_batched = pmap(vmap(vectorized))(inputs_batched)
+            #     y = merge_parallel_results(y_batched)
         else:
             y = weighted_mean(inputs, weights, self.optimiser, maxiter=self.maxiter)
         
