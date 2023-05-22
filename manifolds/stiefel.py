@@ -10,10 +10,13 @@ Orthogonal matrices
 from jax import tree_util, random
 # Base of math operations and derivatives
 from jax import numpy as jnp
-# 
+# For random generation
 from jax import random
+# For boost
+from jax import jit
 # General functions for manifolds
 from geomjax.manifolds.utils import Manifold
+
 
 
 
@@ -28,7 +31,7 @@ def generate_orthogonal(key, n, m):
         Q = Q[:n, :]
         return Q
 
-
+@jit
 def projection_1(M, S):
     """
     Source: Optimization Algorithms on Matrix Manifolds, Absil; item 4.8.1
@@ -39,7 +42,7 @@ def projection_1(M, S):
     return (jnp.eye(M.shape[0]) - M @ M.T) @ S + M @ (M.T @ S - S.T @ M) / 2
 
 
-
+@jit
 def projection_2(M, S):
     """
     Projection from ambient space to tangent space at x
@@ -49,17 +52,17 @@ def projection_2(M, S):
     W_hat = S @ M.T - M @ M.T @ S @ M.T / 2
     return (W_hat - W_hat.T) @ M
 
-
+@jit
 def retraction_qr(M, T):
     Q,_ = jnp.linalg.qr(M + T)
     return  Q
 
-
+@jit
 def retraction_svd(M, T):
     u, _, vh = jnp.linalg.svd(M + T, full_matrices=False)
     return u @ vh
 
-
+@jit
 def distance(X, Y, base = None):
     '''
     Stiefel distance (geodesic) as 

@@ -146,25 +146,9 @@ def weighted_mean_implicit_matrix_derivative(x, X, w, manifold):
 
     # Vectorize
     grad_multiply_inverse_batch = vmap(grad_multiply_inverse, (None, 0), 0)
-    # Find suitable for pmap amount of cores
-    n_jobs = calc_n_jobs(X.shape[0])
-
-    # If there is no parallelisation option
-    if n_jobs == 1:
-        dfdx = grad_multiply_inverse_batch(d2yy_inv, d2xy)
-        dfdw = grad_multiply_inverse_batch(d2yy_inv, d2wy)
-    else:
-        # print(f"DEBUG: Derivative in parallel mode on {n_jobs} devices")
-        grad_multiply_inverse_batch_parallel = pmap(grad_multiply_inverse_batch, in_axes=(None, 0), out_axes=0)
-        # Split by jobs
-        d2xy_batched = parallelize_array(d2xy, n_jobs)
-        d2wy_batched = parallelize_array(d2wy, n_jobs)
-        # Parallel computation
-        dfdx_batched = grad_multiply_inverse_batch_parallel(d2yy_inv, d2xy_batched)
-        dfdw_batched = grad_multiply_inverse_batch_parallel(d2yy_inv, d2wy_batched)
-        # Merge results
-        dfdx = merge_parallel_results(dfdx_batched)
-        dfdw = merge_parallel_results(dfdw_batched)
+    
+    dfdx = grad_multiply_inverse_batch(d2yy_inv, d2xy)
+    dfdw = grad_multiply_inverse_batch(d2yy_inv, d2wy)
 
     return dfdx, dfdw
 
