@@ -38,6 +38,7 @@ class GeometricOptimiser():
         self.counter = 0
 
 
+    # @partial(jit, static_argnums=(0,))
     def update_lr(self):
         if type(self.lr_schedule) is dict:
             if self.counter % self.lr_schedule['freq'] == 0:
@@ -46,7 +47,7 @@ class GeometricOptimiser():
             self.lr = self.lr_schedule[counter]
 
     
-    @partial(jit, static_argnums=(0,))
+    # @partial(jit, static_argnums=(0,))
     def init(self, params):
         # re-init iterations counter
         self.counter = 0
@@ -77,7 +78,7 @@ class GeometricOptimiser():
         return state
 
 
-    @partial(jit, static_argnums=(0,))
+    # @partial(jit, static_argnums=(0,))
     def update(self, params, euclid_grads, state):
         
         def perform_update(param, euclid_grad, state):
@@ -131,12 +132,12 @@ class MomentumGrad(GeometricOptimiser):
         self.counter = 0
 
 
-    @partial(jit, static_argnums=(0,))
+    # @partial(jit, static_argnums=(0,))
     def init_state_params(self, param):
         return {'momentum' : jnp.zeros_like(param)}
 
 
-    @partial(jit, static_argnums=(0,))
+    # @partial(jit, static_argnums=(0,))
     def total_grad(self, param, euclid_grad, state):
         
         # Tangent projection for Riemannian gradient
@@ -149,41 +150,3 @@ class MomentumGrad(GeometricOptimiser):
         state['momentum'] = total_grad
         # Return grad and state
         return total_grad, state
-
-    # @partial(jit, static_argnums=(0,))
-    # def step(self, param, euclid_grad, state=None):
-        
-    #     # Tangent projection for Riemannian gradient
-    #     riem_grad = self.manifold.project(param, euclid_grad)
-        
-    #     # Add momentum
-    #     if state is None:
-    #         state = {}
-    #         total_grad = -self.lr * riem_grad
-    #     else:
-    #         total_grad = -self.lr * riem_grad + self.gamma * state['momentum']
-        
-    #     # Save momentum
-    #     state['momentum'] = total_grad
-    #     # Update param
-    #     param_updated = self.manifold.retract(param, total_grad)
-    #     # Update learning rate
-    #     self.decrease_lr()
-    #     # Return result
-    #     return param_updated, state
-
-
-# class GradientDescent(GeometricOptimiser):
-    
-#     @partial(jit, static_argnums=(0,))
-#     def step(self, param, euclid_grad, state=None):
-        
-#         # Tangent projection for Riemannian gradient
-#         riem_grad = self.manifold.project(param, euclid_grad)
-#         # Update param
-#         param_updated = self.manifold.retract(param, -self.lr * riem_grad)
-#         # Update learning rate
-#         self.decrease_lr()
-#         # Return result
-#         return param_updated
-

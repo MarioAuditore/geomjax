@@ -6,7 +6,7 @@ Functions for Euclidean space
 # =======================================
 # Source: https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
 # Source: https://www.kaggle.com/code/aakashnain/tf-jax-tutorials-part-10-pytrees-in-jax
-from jax import tree_util
+from jax import tree_util, jit
 
 # Base of math operations and derivatives
 from jax import numpy as jnp
@@ -14,6 +14,7 @@ from jax import numpy as jnp
 from geomjax.manifolds.utils import Manifold
 
 
+@jit
 def euclidean_distance(A, B):
     """
     Standard euclidean distance
@@ -24,6 +25,7 @@ def euclidean_distance(A, B):
     return jnp.linalg.norm(A - B)
 
 
+@jit
 def retraction(m , s):
     return m + s
 

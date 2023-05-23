@@ -6,14 +6,14 @@ Functions for Hypersphere manifold
 # =======================================
 # Source: https://jax.readthedocs.io/en/latest/faq.html#strategy-3-making-customclass-a-pytree
 # Source: https://www.kaggle.com/code/aakashnain/tf-jax-tutorials-part-10-pytrees-in-jax
-from jax import tree_util
+from jax import tree_util, jit
 
 # Base of math operations and derivatives
 from jax import numpy as jnp
 # General functions for manifolds
 from geomjax.manifolds.utils import Manifold
 
-
+@jit
 def projection(x, s):
     """
     Projection from ambient space to tangent space at x
@@ -27,6 +27,7 @@ def projection(x, s):
     # return s - jnp.dot(s, n) * n 
 
 
+@jit
 def retraction(x, a):
     """
     Central projection on sphere surface
@@ -38,6 +39,7 @@ def retraction(x, a):
     return p * (jnp.linalg.norm(x) / jnp.linalg.norm(p))
   
 
+@jit
 def arctan_distance(A, B):
     """
     Vector-form angular distance that mesures 
@@ -51,6 +53,7 @@ def arctan_distance(A, B):
     val = jnp.linalg.norm(vector_prod) / jnp.dot(A, B)
     return jnp.arctan(val)
 
+@jit
 def arccos_distance(A, B, ord = 1):
     """
     Vector-form angular distance that mesures 

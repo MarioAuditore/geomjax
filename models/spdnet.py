@@ -3,7 +3,7 @@ from jax import numpy as jnp
 # for initialisation
 from jax import random
 # for vectorization
-from jax import vmap
+from jax import vmap, jit
 # Parallelistaion
 from jax import pmap
 from geomjax.utils import calc_n_jobs, parallelize_array, merge_parallel_results
@@ -42,6 +42,7 @@ class BiMapLayer(nn.Module):
     @nn.compact
     def __call__(self, inputs):
         
+        @jit
         def quadratic_form(w, X):
             oper_1 = vmap(lambda w, X: w.T @ X, (None, 0), 0)
             oper_2 = vmap(lambda X, w: X @ w, (0, None), 0)
@@ -84,6 +85,7 @@ class MultiMapLayer(nn.Module):
     @nn.compact
     def __call__(self, inputs):
         
+        @jit
         def quadratic_form(w, X):
             oper_1 = vmap(lambda w, X: jnp.swapaxes(w, -1, -2) @ X, (None, 0), 0)
             oper_2 = vmap(lambda X, w: X @ w, (0, None), 0)
@@ -115,6 +117,7 @@ class MultiBiMapLayer(nn.Module):
     @nn.compact
     def __call__(self, inputs):
         
+        @jit
         def quadratic_form(w, X):
             oper_1 = vmap(lambda w, X: jnp.swapaxes(w, -1, -2) @ X, (-3, -3),-3 )
             oper_2 = vmap(lambda X, w: X @ w, (-3, -3),-3 )
@@ -141,6 +144,7 @@ class ReEigLayer(nn.Module):
     @nn.compact
     def __call__(self, inputs):
         
+        @jit
         def reeig(M):
             evals, evecs = jnp.linalg.eigh(M)
             new_evals = jnp.maximum(evals, self.threschold)
@@ -164,6 +168,8 @@ class LogEigLayer(nn.Module):
     
     @nn.compact
     def __call__(self, inputs):
+        
+        @jit
         def logeig(M):
             evals, evecs = jnp.linalg.eigh(M)
             evals = jnp.log(evals)

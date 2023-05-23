@@ -12,13 +12,11 @@ from jax import random
 # Jax functions for jit
 from functools import partial
 # Vectorization
-from jax import vmap, lax
+from jax import vmap, lax, jit
 # Parallelisation
 from jax import pmap
 # Optax lib for clipping
 import optax
-
-import numpy as np
 
 # Distance function
 from geomjax.manifolds.utils import pairwise_distance
@@ -28,7 +26,6 @@ from geomjax.utils import calc_n_jobs, parallelize_array, merge_parallel_results
 import matplotlib.pyplot as plt
 
 
-# @implicit_diff.custom_root(grad(pairwise_distance))
 def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, maxiter, debug = False):
     """
     Weighted mean calculation as an optimization problem:
@@ -44,16 +41,22 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, ma
     if plot_loss_flag:
         plot_loss = []
 
+    # Set randomness
     key,_ = random.split(random.PRNGKey(0))
-    # init mean with random element from set and move it a bit
-    if len(X_set.shape) > 2:
-        Y = X_set[np.random.randint(0, X_set.shape[0], (1,))][0] + jnp.abs(random.uniform(key, shape=(X_set.shape[-1],)) * 1e-4)
+    # Choose a subset
+    if X_set.shape[0] > 5:
+        X_sample = random.choice(key, X_set, shape=(5,))
     else:
-        Y = X_set[np.random.randint(0, X_set.shape[0], (1,))][0] + 1e-4
+        X_sample = X_set
+    # Find pairwise distances for each point in a subset
+    distances = vmap(pairwise_distance, (0, None, None), 0)(X_sample, X_set, optimiser.manifold.distance)
+    # Init mean with a point closest to other points
+    if len(X_set.shape) > 2:
+        Y = X_set[jnp.argmin(distances)] + jnp.abs(random.uniform(key, shape=(X_set.shape[-1],)) * 1e-4)
+    else:
+        Y = X_set[jnp.argmin(distances)] + 1e-4
 
     optim_state = optimiser.init(Y)
-    
-    average_grad = None
 
     for i in range(maxiter):
 

@@ -36,7 +36,6 @@ class Manifold():
         self.key = random.PRNGKey(1234)
         self.random_generator = random_generator
 
-    @jit
     def project(self, M, S):
         """
         Local projection operation on manifold tangent space
@@ -45,7 +44,6 @@ class Manifold():
         """
         return self.projection(M, S)
 
-    @jit
     def retract(self, M, T):
         """
         Retraction operation from tangent space to manifold
@@ -54,7 +52,6 @@ class Manifold():
         """
         return self.retraction(M, T)
 
-    @jit
     def calculate_distance(self, X, Y):
         
         """
