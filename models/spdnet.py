@@ -108,7 +108,7 @@ class MultiMapLayer(nn.Module):
 
 # === Functions for MultiBiMapLayer ===
 # Multiplication
-@jit
+# @jit
 def multibimap_quadratic_form(w, X):
     oper_1 = vmap(lambda w, X: jnp.swapaxes(w, -1, -2) @ X, (-3, -3),-3 )
     oper_2 = vmap(lambda X, w: X @ w, (-3, -3),-3 )
