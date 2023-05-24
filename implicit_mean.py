@@ -46,22 +46,17 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, ma
     # Set randomness
     key,_ = random.split(random.PRNGKey(0))
     # Choose a subset
-    # if X_set.shape[0] > 5:
-    #     X_sample = random.choice(key, X_set, shape=(5,))
-    # else:
-    #     X_sample = X_set
-    # # Find pairwise distances for each point in a subset
-    # distances = vmap(pairwise_distance, (0, None, None), 0)(X_sample, X_set, optimiser.manifold.distance)
-    # # Init mean with a point closest to other points
-    # if len(X_set.shape) > 2:
-    #     Y = X_set[jnp.argmin(distances)] + jnp.abs(random.uniform(key, shape=(X_set.shape[-1],)) * 1e-4)
-    # else:
-    #     Y = X_set[jnp.argmin(distances)] + 1e-4
-
-    if len(X_set.shape) > 2:
-        Y = random.choice(key, X_set, shape=(1,))[0] + jnp.abs(random.uniform(key, shape=(X_set.shape[-1],)) * 1e-5)
+    if X_set.shape[0] > 5:
+        X_sample = random.choice(key, X_set, shape=(5,))
     else:
-        Y = random.choice(key, X_set, shape=(1,))[0] + 1e-4
+        X_sample = X_set
+    # Find pairwise distances for each point in a subset
+    distances = vmap(pairwise_distance, (0, None, None), 0)(X_sample, X_set, optimiser.manifold.distance)
+    # Init mean with a point closest to other points
+    if len(X_set.shape) > 2:
+        Y = X_set[jnp.argmin(distances)] + jnp.abs(random.uniform(key, shape=(X_set.shape[-1],)) * 1e-4)
+    else:
+        Y = X_set[jnp.argmin(distances)] + 1e-4
 
     optim_state = optimiser.init(Y)
 

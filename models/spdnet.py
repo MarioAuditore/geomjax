@@ -141,7 +141,7 @@ class MultiBiMapLayer(nn.Module):
 
 # === Functions for ReEig ===
 # Algorithm
-@jit
+# @jit
 def reeig(M, threschold):
     evals, evecs = jnp.linalg.eigh(M)
     new_evals = jnp.maximum(evals, threschold)
