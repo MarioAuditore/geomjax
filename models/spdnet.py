@@ -28,7 +28,7 @@ def bimap_init(key, n, m):
     return Q
 
 # Multiplication
-# @jit
+@jit
 def bimap_quadratic_form(w, X):
     oper_1 = vmap(lambda w, X: w.T @ X, (None, 0), 0)
     oper_2 = vmap(lambda X, w: X @ w, (0, None), 0)
