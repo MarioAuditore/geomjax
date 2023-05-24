@@ -58,7 +58,7 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, ma
     # else:
     #     Y = X_set[jnp.argmin(distances)] + 1e-4
 
-    f len(X_set.shape) > 2:
+    if len(X_set.shape) > 2:
         Y = X_set[random.choice(key, X_set, shape=(1,))[0]] + jnp.abs(random.uniform(key, shape=(X_set.shape[-1],)) * 1e-5)
     else:
         Y = X_set[random.choice(key, X_set, shape=(1,))[0]] + 1e-4
