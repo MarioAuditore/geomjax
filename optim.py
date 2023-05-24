@@ -25,6 +25,10 @@ import matplotlib.pyplot as plt
 2) Сделать все через vmap, чтобы была батчи
 '''
 
+
+
+
+
 class GeometricOptimiser():
     def __init__(self, manifold, lr, lr_schedule = None):
         '''
@@ -38,7 +42,6 @@ class GeometricOptimiser():
         self.counter = 0
 
 
-    # @partial(jit, static_argnums=(0,))
     def update_lr(self):
         if type(self.lr_schedule) is dict:
             if self.counter % self.lr_schedule['freq'] == 0:
@@ -47,7 +50,6 @@ class GeometricOptimiser():
             self.lr = self.lr_schedule[counter]
 
     
-    # @partial(jit, static_argnums=(0,))
     def init(self, params):
         # re-init iterations counter
         self.counter = 0
@@ -78,7 +80,6 @@ class GeometricOptimiser():
         return state
 
 
-    # @partial(jit, static_argnums=(0,))
     def update(self, params, euclid_grads, state):
         
         def perform_update(param, euclid_grad, state):
@@ -132,12 +133,10 @@ class MomentumGrad(GeometricOptimiser):
         self.counter = 0
 
 
-    # @partial(jit, static_argnums=(0,))
     def init_state_params(self, param):
         return {'momentum' : jnp.zeros_like(param)}
 
 
-    # @partial(jit, static_argnums=(0,))
     def total_grad(self, param, euclid_grad, state):
         
         # Tangent projection for Riemannian gradient

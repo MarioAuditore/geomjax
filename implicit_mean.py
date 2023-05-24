@@ -26,6 +26,8 @@ from geomjax.utils import calc_n_jobs, parallelize_array, merge_parallel_results
 import matplotlib.pyplot as plt
 
 
+
+
 def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, maxiter, debug = False):
     """
     Weighted mean calculation as an optimization problem:
@@ -98,6 +100,11 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, ma
 
     return Y
 
+# === Functions for mean derivative ===
+# Multiplication
+@jit
+def grad_multiply_inverse(dyy_inv, d_mixed):
+        return -dyy_inv @ d_mixed
 
 
 def weighted_mean_implicit_derivative(x, X, w, manifold):
@@ -114,9 +121,6 @@ def weighted_mean_implicit_derivative(x, X, w, manifold):
 
     d2xy = jnp.squeeze(jacobian(dy_projected, argnums=1)(x, X, w))  # (2, 22, 2)
     d2wy = jnp.squeeze(jacobian(dy_projected, argnums=2)(x, X, w))  # (2, 22)
-
-    def grad_multiply_inverse(dyy_inv, d_mixed):
-        return -dyy_inv @ d_mixed
 
     grad_multiply_inverse_batch = vmap(grad_multiply_inverse, (None, 1), 1)
 
@@ -144,9 +148,6 @@ def weighted_mean_implicit_matrix_derivative(x, X, w, manifold):
     d2xy = jnp.squeeze(jacobian(dy_projected_trace, argnums=1)(x, X, w))  # (10, 5, 5)
     d2wy = jnp.squeeze(jacobian(dy_projected, argnums=2)(x, X, w)).swapaxes(-1, 0)  # (10, 5, 5)
     
-    def grad_multiply_inverse(dyy_inv, d_mixed):
-        return -dyy_inv @ d_mixed
-
     # Vectorize
     grad_multiply_inverse_batch = vmap(grad_multiply_inverse, (None, 0), 0)
     
