@@ -102,7 +102,7 @@ def gradient_descend_weighted_mean(X_set, weights, optimiser, plot_loss_flag, ma
 
 # === Functions for mean derivative ===
 # Multiplication
-@jit
+# @jit
 def grad_multiply_inverse(dyy_inv, d_mixed):
         return -dyy_inv @ d_mixed
 
