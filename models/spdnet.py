@@ -28,7 +28,7 @@ def bimap_init(key, n, m):
     return Q
 
 # Multiplication
-@jit
+# @jit
 def bimap_quadratic_form(w, X):
     oper_1 = vmap(lambda w, X: w.T @ X, (None, 0), 0)
     oper_2 = vmap(lambda X, w: X @ w, (0, None), 0)
@@ -72,7 +72,7 @@ def multimap_init(key, n_submanifolds, n, m):
     return jnp.array(params)
 
 # Multiplication
-@jit
+# @jit
 def multimap_quadratic_form(w, X):
     oper_1 = vmap(lambda w, X: jnp.swapaxes(w, -1, -2) @ X, (None, 0), 0)
     oper_2 = vmap(lambda X, w: X @ w, (0, None), 0)
@@ -141,7 +141,7 @@ class MultiBiMapLayer(nn.Module):
 
 # === Functions for ReEig ===
 # Algorithm
-# @jit
+@jit
 def reeig(M, threschold):
     evals, evecs = jnp.linalg.eigh(M)
     new_evals = jnp.maximum(evals, threschold)
