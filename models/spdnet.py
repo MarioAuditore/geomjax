@@ -131,12 +131,6 @@ class MultiBiMapLayer(nn.Module):
     @nn.compact
     def __call__(self, inputs):
         
-        @jit
-        def multibimap_quadratic_form(w, X):
-            oper_1 = vmap(lambda w, X: jnp.swapaxes(w, -1, -2) @ X, (-3, -3),-3 )
-            oper_2 = vmap(lambda X, w: X @ w, (-3, -3),-3 )
-            return oper_2(oper_1(w, X), w)
-        
         submanifold_maps = self.param('Matrix',
                                     self.params_init, # Initialization function for Orthogonal matrix
                                     inputs.shape[-3], inputs.shape[-1], self.out_dim)  # shape info.
