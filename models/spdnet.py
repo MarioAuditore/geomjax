@@ -6,7 +6,7 @@ from jax import random
 from jax import vmap, jit
 # Parallelistaion
 from jax import pmap
-from geomjax.utils import calc_n_jobs, parallelize_array, merge_parallel_results
+
 
 # Defining data for class
 from typing import Any, Callable, Sequence
@@ -51,7 +51,7 @@ class BiMapLayer(nn.Module):
     @nn.compact
     def __call__(self, inputs):
         
-        gen_key = random.PRNGKey(0)
+        # gen_key = random.PRNGKey(0)
         mapping_matrix = self.param('Matrix',
                                     self.matrix_init, # Initialization function for Orthogonal matrix
                                     inputs.shape[-1], self.out_dim)  # shape info.
@@ -72,7 +72,7 @@ def multimap_init(key, n_submanifolds, n, m):
     return jnp.array(params)
 
 # Multiplication
-# @jit
+@jit
 def multimap_quadratic_form(w, X):
     oper_1 = vmap(lambda w, X: jnp.swapaxes(w, -1, -2) @ X, (None, 0), 0)
     oper_2 = vmap(lambda X, w: X @ w, (0, None), 0)
@@ -108,7 +108,7 @@ class MultiMapLayer(nn.Module):
 
 # === Functions for MultiBiMapLayer ===
 # Multiplication
-# @jit
+@jit
 def multibimap_quadratic_form(w, X):
     oper_1 = vmap(lambda w, X: jnp.swapaxes(w, -1, -2) @ X, (-3, -3),-3 )
     oper_2 = vmap(lambda X, w: X @ w, (-3, -3),-3 )

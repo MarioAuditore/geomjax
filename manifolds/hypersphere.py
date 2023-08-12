@@ -12,19 +12,27 @@ from jax import tree_util, jit
 from jax import numpy as jnp
 # General functions for manifolds
 from geomjax.manifolds.utils import Manifold
+# Vectorization
+from jax import vmap
+
 
 @jit
-def projection(x, s):
+def projection(s, x):
     """
     Projection from ambient space to tangent space at x
-    x - point on a sphere
-    s - vector from ambient space
+    s - point on a sphere
+    x - vector from ambient space
     """
-    # Get normal vector as radius
-    n = x / jnp.linalg.norm(x)
-    # Find projection
-    return s - jnp.dot(s - x, n) * n 
-    # return s - jnp.dot(s, n) * n 
+    def sphere_proj(s, x):
+        # Get normal vector as radius
+        n = s / jnp.linalg.norm(s)
+        # Find projection
+        return x - jnp.dot(x - s, n) * n 
+    
+    if len(x.shape) > 1:
+        return vmap(sphere_proj)(s, x)
+    else:
+        return sphere_proj(s, x)
 
 
 @jit
@@ -34,9 +42,15 @@ def retraction(x, a):
     x - point on a sphere
     a - vector from tangent space at x
     """
-    # step forward
-    p = x + a
-    return p * (jnp.linalg.norm(x) / jnp.linalg.norm(p))
+    def sphere_retr(x, a):
+        # step forward
+        p = x + a
+        return p * (jnp.linalg.norm(x) / jnp.linalg.norm(p))
+    
+    if len(x.shape) > 1:
+        return vmap(sphere_retr)(x, a)
+    else:
+        return sphere_retr(x, a)
   
 
 @jit

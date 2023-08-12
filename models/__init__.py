@@ -1,1 +1,1 @@
-from geomjax.models import spdnet
+from geomjax.models import spdnet, geometric_mlp

@@ -47,7 +47,7 @@ class GeometricOptimiser():
             if self.counter % self.lr_schedule['freq'] == 0:
                 self.lr *= self.lr_schedule['multiplier']
         else:
-            self.lr = self.lr_schedule[counter]
+            self.lr *= self.lr_schedule
 
     
     def init(self, params):
@@ -134,6 +134,7 @@ class MomentumGrad(GeometricOptimiser):
 
 
     def init_state_params(self, param):
+        self.counter = 0
         return {'momentum' : jnp.zeros_like(param)}
 
 
@@ -143,9 +144,65 @@ class MomentumGrad(GeometricOptimiser):
         riem_grad = self.manifold.project(param, euclid_grad)
         
         # Add momentum
-        total_grad = -self.lr * (riem_grad + self.gamma * state['momentum'])
+        # total_grad = riem_grad + self.gamma * state['momentum']
+        if self.counter == 0:
+            total_grad = riem_grad
+        else:
+            total_grad = (1 - self.gamma) * riem_grad + self.gamma * state['momentum']
         
         # Save momentum
         state['momentum'] = total_grad
+        # Return grad and state
+        return -self.lr * total_grad, state
+
+
+
+class Adam(GeometricOptimiser):
+    '''
+    Under cinstruction, currently it's just crap
+    '''
+    
+    def __init__(self, manifold, lr = 1e-1, beta_1 = 0.9, beta_2 = 0.99, eps = 1e-3, lr_schedule = None):
+        
+        self.beta_1 = beta_1
+        self.beta_2 = beta_2
+        self.lr = lr
+        self.eps = eps
+        self.manifold = manifold
+        self.lr_schedule = lr_schedule
+        self.counter = 0
+
+
+    def init_state_params(self, param):
+        self.counter = 0
+        return {'m' : jnp.zeros_like(param), 
+                'v' : jnp.zeros_like(param)}
+
+
+    def total_grad(self, param, euclid_grad, state):
+        
+        # Tangent projection for Riemannian gradient
+        riem_grad = self.manifold.project(param, euclid_grad)
+        
+        # Statistics
+        if self.counter == 0:
+            state['m'] = riem_grad
+            state['v'] = riem_grad @ riem_grad.T # попробовать имитировать квадрат
+        else:
+            state['m'] = self.beta_1 * state['m'] + (1 - self.beta_1) * riem_grad
+            state['v'] = self.beta_2 * state['v'] + (1 - self.beta_2) * riem_grad @ riem_grad.T # попробовать имитировать квадрат
+
+        # Bias correction
+        if self.counter == 0:
+            m_corrected = state['m']
+            v_corected = state['v']
+        else:
+            m_corrected = state['m'] / (1 - self.beta_1 ** self.counter)
+            v_corected = state['v'] / (1 - self.beta_2 ** self.counter)
+
+        total_grad = -self.lr * m_corrected / (jnp.sqrt(jnp.linalg.norm(v_corected)) + self.eps)
+        
+        # print(f'm_corrected: {jnp.linalg.norm(m_corrected)} v_corrected: {jnp.sqrt(jnp.linalg.norm(v_corected))} total_grad {jnp.linalg.norm(total_grad)}')
+        
         # Return grad and state
         return total_grad, state
