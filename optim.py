@@ -186,8 +186,8 @@ class Adam(GeometricOptimiser):
         
         # Statistics
         if self.counter == 0:
-            state['m'] = riem_grad
-            state['v'] = riem_grad @ riem_grad.T # попробовать имитировать квадрат
+            state['m'] = (1 - self.beta_1) * riem_grad
+            state['v'] = (1 - self.beta_2) * riem_grad @ riem_grad.T # попробовать имитировать квадрат
         else:
             state['m'] = self.beta_1 * state['m'] + (1 - self.beta_1) * riem_grad
             state['v'] = self.beta_2 * state['v'] + (1 - self.beta_2) * riem_grad @ riem_grad.T # попробовать имитировать квадрат
