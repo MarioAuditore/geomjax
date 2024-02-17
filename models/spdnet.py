@@ -224,6 +224,7 @@ class SPDAvgPooling(nn.Module):
     optimiser: Any
     maxiter: int = 100
     debug: bool = False
+    plot_loss_flag: bool = False
     weights_init: Callable = nn.initializers.uniform()
 
     @nn.compact
@@ -234,6 +235,6 @@ class SPDAvgPooling(nn.Module):
                 return weighted_mean(inputs, weights, self.optimiser, maxiter=self.maxiter, debug=self.debug)
             y = vmap(vectorized)(inputs)
         else:
-            y = weighted_mean(inputs, weights, self.optimiser, maxiter=self.maxiter)
+            y = weighted_mean(inputs, weights, self.optimiser, plot_loss_flag=self.plot_loss_flag, maxiter=self.maxiter, debug=self.debug)
         
         return y

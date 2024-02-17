@@ -33,17 +33,31 @@ class StiefelLinear(nn.Module):
     SPD matrix to it's own submanifold
     """
     out_dim: int
+    bias : bool = False
     matrix_init: Callable = bimap_init
 
     @nn.compact
     def __call__(self, inputs):
         
-        # gen_key = random.PRNGKey(0)
-        mapping_matrix = self.param('Matrix',
-                                    self.matrix_init, # Initialization function for Orthogonal matrix
-                                    inputs.shape[-1] + 1, self.out_dim)  # shape info.
-        x = jnp.vstack([jnp.ones(inputs.shape[0]), inputs])
-        y = x @ mapping_matrix.T
+        if self.bias:
+            mapping_matrix = self.param('Matrix',
+                                        self.matrix_init, # Initialization function for Orthogonal matrix
+                                        inputs.shape[-1] + 1, self.out_dim)  # shape info.
+            if len(inputs.shape) < 2:
+                inputs = jnp.expand_dims(inputs, 0)
+                ones  = jnp.expand_dims(jnp.ones(inputs.shape[0]), 0)
+            else:
+                ones  = jnp.expand_dims(jnp.ones(inputs.shape[0]), 0).T
+            
+            x = jnp.hstack([inputs, ones])
+            y = x @ mapping_matrix
+
+        else:
+            mapping_matrix = self.param('Matrix',
+                                        self.matrix_init, # Initialization function for Orthogonal matrix
+                                        inputs.shape[-1], self.out_dim)  # shape info.
+            y = inputs @ mapping_matrix
+        
         return y
 
 
@@ -66,21 +80,29 @@ class SphereLinear(nn.Module):
     SPD matrix to it's own submanifold
     """
     out_dim: int
+    bias : bool = False
     matrix_init: Callable = sphere_init
 
     @nn.compact
     def __call__(self, inputs):
         
-        # gen_key = random.PRNGKey(0)
-        mapping_matrix = self.param('Matrix',
-                                    self.matrix_init, # Initialization function for Orthogonal matrix
-                                    inputs.shape[-1] + 1, self.out_dim)  # shape info.
-        if len(inputs.shape) < 2:
-            inputs = jnp.expand_dims(inputs, 0)
-            ones  = jnp.expand_dims(jnp.ones(inputs.shape[0]), 0)
+        if self.bias:
+            mapping_matrix = self.param('Matrix',
+                                        self.matrix_init, # Initialization function for Orthogonal matrix
+                                        inputs.shape[-1] + 1, self.out_dim)  # shape info.
+            if len(inputs.shape) < 2:
+                inputs = jnp.expand_dims(inputs, 0)
+                ones  = jnp.expand_dims(jnp.ones(inputs.shape[0]), 0)
+            else:
+                ones  = jnp.expand_dims(jnp.ones(inputs.shape[0]), 0).T
+            
+            x = jnp.hstack([inputs, ones])
+            y = x @ mapping_matrix.T
+
         else:
-            ones  = jnp.expand_dims(jnp.ones(inputs.shape[0]), 0).T
+            mapping_matrix = self.param('Matrix',
+                                        self.matrix_init, # Initialization function for Orthogonal matrix
+                                        inputs.shape[-1], self.out_dim)  # shape info.
+            y = inputs @ mapping_matrix.T
         
-        x = jnp.hstack([inputs, ones])
-        y = x @ mapping_matrix.T
         return y

@@ -109,7 +109,7 @@ class GeometricOptimiser():
         # else:
         except:
             if len(params.shape) == 3:
-                params, state = vmap(perform_update, (0,0,0),0)(params, euclid_grads, state)
+                params, state = vmap(perform_update, (0,0,0), 0)(params, euclid_grads, state)
             else:
                 params, state = perform_update(params, euclid_grads, state)   
         
@@ -137,18 +137,14 @@ class MomentumGrad(GeometricOptimiser):
         self.counter = 0
         return {'momentum' : jnp.zeros_like(param)}
 
-
+    
     def total_grad(self, param, euclid_grad, state):
         
         # Tangent projection for Riemannian gradient
         riem_grad = self.manifold.project(param, euclid_grad)
         
         # Add momentum
-        # total_grad = riem_grad + self.gamma * state['momentum']
-        if self.counter == 0:
-            total_grad = riem_grad
-        else:
-            total_grad = (1 - self.gamma) * riem_grad + self.gamma * state['momentum']
+        total_grad = (1 - self.gamma) * riem_grad + self.gamma * state['momentum']
         
         # Save momentum
         state['momentum'] = total_grad
@@ -193,12 +189,8 @@ class Adam(GeometricOptimiser):
             state['v'] = self.beta_2 * state['v'] + (1 - self.beta_2) * riem_grad @ riem_grad.T # попробовать имитировать квадрат
 
         # Bias correction
-        if self.counter == 0:
-            m_corrected = state['m']
-            v_corected = state['v']
-        else:
-            m_corrected = state['m'] / (1 - self.beta_1 ** self.counter)
-            v_corected = state['v'] / (1 - self.beta_2 ** self.counter)
+        m_corrected = state['m'] / (1 - self.beta_1 ** (self.counter + 1))
+        v_corected = state['v'] / (1 - self.beta_2 ** (self.counter + 1))
 
         total_grad = -self.lr * m_corrected / (jnp.sqrt(jnp.linalg.norm(v_corected)) + self.eps)
         
