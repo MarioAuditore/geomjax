@@ -13,8 +13,7 @@ from jax import random
 from functools import partial
 # Vectorization
 from jax import vmap, lax, jit
-# Parallelisation
-from jax import pmap
+
 # Optax lib for clipping
 import optax
 
@@ -153,6 +152,7 @@ def weighted_mean_implicit_matrix_derivative(x, X, w, manifold):
     # Vectorize
     grad_multiply_inverse_batch = vmap(grad_multiply_inverse, (None, 0), 0)
     
+    # n_cpu = cpu_count()
     dfdx = grad_multiply_inverse_batch(d2yy, d2xy)
     dfdw = grad_multiply_inverse_batch(d2yy, d2wy)
 

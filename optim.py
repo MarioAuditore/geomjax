@@ -7,16 +7,9 @@
 from jax import vmap
 # Base of math operations and derivatives
 from jax import numpy as jnp
-# Custom derivative declaration
-from jax import grad, jacobian, jit
-# Jax functions for jit
-from functools import partial
 # Flax functions for parameter manipulation
-from flax.core import freeze, unfreeze
-# For detecting arrays
-from jaxlib.xla_extension import ArrayImpl
-# Plotting
-import matplotlib.pyplot as plt
+from flax.core import unfreeze
+
 
 '''
 1) Для производных по аргументам среднего
@@ -26,28 +19,21 @@ import matplotlib.pyplot as plt
 '''
 
 
-
-
-
 class GeometricOptimiser():
-    def __init__(self, manifold, lr, lr_schedule = None):
+    def __init__(self, manifold, lr = 3e-4, scheduler = None):
         '''
-        lr_schedule = {'freq' : int, 'multiplier': float}
-        or lr_schedule = [lr_2, ..., lr_n]
+        lr_schedule : optax scheduler
         '''
         
         self.lr = lr
         self.manifold = manifold
-        self.lr_schedule = lr_schedule
+        self.scheduler = scheduler
         self.counter = 0
 
 
     def update_lr(self):
-        if type(self.lr_schedule) is dict:
-            if self.counter % self.lr_schedule['freq'] == 0:
-                self.lr *= self.lr_schedule['multiplier']
-        else:
-            self.lr *= self.lr_schedule
+        self.lr = self.scheduler(self.counter)
+        self.counter += 1
 
     
     def init(self, params):
@@ -82,10 +68,11 @@ class GeometricOptimiser():
 
     def update(self, params, euclid_grads, state):
         
+        # Update is performed via exponential map
         def perform_update(param, euclid_grad, state):
             gradient, state = self.total_grad(param, euclid_grad, state)
             param = self.manifold.retract(param, gradient)
-            if self.lr_schedule:
+            if self.scheduler:
                 self.update_lr()
             return param, state
 
@@ -97,7 +84,9 @@ class GeometricOptimiser():
                 try:
                     for param in params[layer].keys():
                         if len(params[layer][param].shape) == 3:
-                            params[layer][param], state[layer][param] = vmap(perform_update, (0,0,0),0)(params[layer][param], euclid_grads[layer][param], state[layer][param])
+                            params[layer][param], state[layer][param] = vmap(perform_update, (0,0,0), 0)(params[layer][param], euclid_grads[layer][param], state[layer][param])
+                        # elif len(params[layer][param].shape) == 4:
+                        #     params[layer][param], state[layer][param] = vmap(vmap(perform_update, (0,0,0), 0), (0,0,0), 0)(params[layer][param], euclid_grads[layer][param], state[layer][param])
                         else:
                             params[layer][param], state[layer][param] = perform_update(params[layer][param], euclid_grads[layer][param], state[layer][param])
                 # else:
@@ -117,84 +106,17 @@ class GeometricOptimiser():
         return params, state
 
 
-    
-
-'''
-Based on: https://medium.com/konvergen/momentum-method-and-nesterov-accelerated-gradient-487ba776c987
-'''
-class MomentumGrad(GeometricOptimiser):
-    
-    def __init__(self, manifold, lr = 1e-1, gamma = 0.9, lr_schedule = None):
-        
-        self.gamma = gamma
-        self.lr = lr
-        self.manifold = manifold
-        self.lr_schedule = lr_schedule
-        self.counter = 0
-
+class SGD(GeometricOptimiser):
 
     def init_state_params(self, param):
         self.counter = 0
-        return {'momentum' : jnp.zeros_like(param)}
+        return {}
 
     
     def total_grad(self, param, euclid_grad, state):
         
         # Tangent projection for Riemannian gradient
         riem_grad = self.manifold.project(param, euclid_grad)
-        
-        # Add momentum
-        total_grad = (1 - self.gamma) * riem_grad + self.gamma * state['momentum']
-        
-        # Save momentum
-        state['momentum'] = total_grad
+
         # Return grad and state
-        return -self.lr * total_grad, state
-
-
-
-class Adam(GeometricOptimiser):
-    '''
-    Under cinstruction, currently it's just crap
-    '''
-    
-    def __init__(self, manifold, lr = 1e-1, beta_1 = 0.9, beta_2 = 0.99, eps = 1e-3, lr_schedule = None):
-        
-        self.beta_1 = beta_1
-        self.beta_2 = beta_2
-        self.lr = lr
-        self.eps = eps
-        self.manifold = manifold
-        self.lr_schedule = lr_schedule
-        self.counter = 0
-
-
-    def init_state_params(self, param):
-        self.counter = 0
-        return {'m' : jnp.zeros_like(param), 
-                'v' : jnp.zeros_like(param)}
-
-
-    def total_grad(self, param, euclid_grad, state):
-        
-        # Tangent projection for Riemannian gradient
-        riem_grad = self.manifold.project(param, euclid_grad)
-        
-        # Statistics
-        if self.counter == 0:
-            state['m'] = (1 - self.beta_1) * riem_grad
-            state['v'] = (1 - self.beta_2) * riem_grad @ riem_grad.T # попробовать имитировать квадрат
-        else:
-            state['m'] = self.beta_1 * state['m'] + (1 - self.beta_1) * riem_grad
-            state['v'] = self.beta_2 * state['v'] + (1 - self.beta_2) * riem_grad @ riem_grad.T # попробовать имитировать квадрат
-
-        # Bias correction
-        m_corrected = state['m'] / (1 - self.beta_1 ** (self.counter + 1))
-        v_corected = state['v'] / (1 - self.beta_2 ** (self.counter + 1))
-
-        total_grad = -self.lr * m_corrected / (jnp.sqrt(jnp.linalg.norm(v_corected)) + self.eps)
-        
-        # print(f'm_corrected: {jnp.linalg.norm(m_corrected)} v_corrected: {jnp.sqrt(jnp.linalg.norm(v_corected))} total_grad {jnp.linalg.norm(total_grad)}')
-        
-        # Return grad and state
-        return total_grad, state
+        return -self.lr * riem_grad, state

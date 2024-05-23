@@ -3,16 +3,12 @@ from jax import numpy as jnp
 # for initialisation
 from jax import random
 # for vectorization
-from jax import vmap, jit
-# Parallelistaion
-from jax import pmap
-
+from jax import vmap
 
 # Defining data for class
-from typing import Any, Callable, Sequence
+from typing import Callable
 
 # Flax framework for Deep Learning
-from flax.core import freeze, unfreeze
 from flax import linen as nn
 
 # Weights initialization
@@ -24,13 +20,11 @@ from geomjax.models.spdnet import bimap_init
 # Layer itself
 class StiefelLinear(nn.Module):
     """
-    BiMapLayer - projects SPD matrix 
-    to one submanifold
+    StiefelLinear - MLP with weight matrix on Stiefel manifold
     
-    out_dim: dimention of submanifold
+    out_dim: dimention of output
     
-    learnable parameter: orthogonal matrix which projects 
-    SPD matrix to it's own submanifold
+    learnable parameter: orthogonal matrix dim_in x dim_out
     """
     out_dim: int
     bias : bool = False
@@ -71,13 +65,11 @@ def sphere_init(key, n, m):
 # Layer itself
 class SphereLinear(nn.Module):
     """
-    BiMapLayer - projects SPD matrix 
-    to one submanifold
+    SphereLinear - MLP with weight matrix on Hypersphere
     
-    out_dim: dimention of submanifold
+    out_dim: dimention of output
     
-    learnable parameter: orthogonal matrix which projects 
-    SPD matrix to it's own submanifold
+    learnable parameter: matrix with normalised basis
     """
     out_dim: int
     bias : bool = False

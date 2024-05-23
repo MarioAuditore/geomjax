@@ -7,7 +7,7 @@ from jax import device_count
 
 
 # === functions for parallelism ===
-
+# Currently not used for stability
 
 def calc_n_jobs(n_samples):
     n_cores = device_count()

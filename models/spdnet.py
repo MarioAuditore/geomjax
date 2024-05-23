@@ -4,15 +4,11 @@ from jax import numpy as jnp
 from jax import random
 # for vectorization
 from jax import vmap, jit
-# Parallelistaion
-from jax import pmap
-
 
 # Defining data for class
-from typing import Any, Callable, Sequence
+from typing import Any, Callable
 
 # Flax framework for Deep Learning
-from flax.core import freeze, unfreeze
 from flax import linen as nn
 
 # Implicit manifold mean
@@ -238,3 +234,66 @@ class SPDAvgPooling(nn.Module):
             y = weighted_mean(inputs, weights, self.optimiser, plot_loss_flag=self.plot_loss_flag, maxiter=self.maxiter, debug=self.debug)
         
         return y
+    
+
+
+# For future attempts to make uuniversal bimap
+
+# # Projection initializer
+# def generate_stiefel(key, n, m):
+#     size = max(n, m)
+#     Q,_ = jnp.linalg.qr(random.uniform(key, shape=(size, size)))
+#     Q = Q[:n, :m]
+#     return Q
+
+# # Layer initializer
+# def bimap_init(key, n, m, n_in, n_out):
+#     # generate submanifolds for one input
+#     gen_submanifold = vmap(lambda i: generate_stiefel(key, n, m))
+#     # now apply to all inputs
+#     gen_param = vmap(lambda i: gen_submanifold(range(n_out)))(range(n_in))
+#     return gen_param
+
+# # Multiplication
+# @jit
+# def bimap_quadratic_form(W, X):
+#     res_1 = jnp.einsum('akn,abnm->abkm', X, W)
+#     res_2 = jnp.einsum('abnm,abnk->abmk', W, res_1).squeeze()
+#     return res_2
+
+# # Layer itself
+# class BiMapLayer(nn.Module): # get n matrices, out n*m, where m submanifolds
+#     """
+#     BiMapLayer - projects SPD matrix 
+#     to one submanifold
+    
+#     n_manifolds_in: number of matrices in input, which will be projected
+#     out_dim: dimention of submanifold
+#     n_submanifolds: nmber of submanifolds for projection per each input matrix
+    
+#     learnable parameter: orthogonal matrix which projects 
+#     SPD matrix to it's own submanifold
+#     """
+#     out_dim: int
+#     n_manifolds_in: int = 1
+#     n_submanifolds: int = 1
+
+#     matrix_init: Callable = bimap_init
+
+#     @nn.compact
+#     def __call__(self, inputs):
+        
+#         mapping_matrix = self.param('Matrix',
+#                                     self.matrix_init, # Initialization function for Orthogonal matrix
+#                                     inputs.shape[-1], # n
+#                                     self.out_dim, # m
+#                                     self.n_manifolds_in, # n_in
+#                                     self.n_submanifolds # n_out
+#                                     )  
+#         if inputs.ndim == 2:
+#             y = bimap_quadratic_form(mapping_matrix, inputs[None, :])
+#         elif self.n_manifolds_in != inputs.shape[0]:
+#             y = vmap(lambda x: bimap_quadratic_form(mapping_matrix, x))(inputs)
+#         else:
+#             y = bimap_quadratic_form(mapping_matrix, inputs)
+#         return y

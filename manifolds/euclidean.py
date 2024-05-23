@@ -48,14 +48,6 @@ class Euclidean(Manifold):
 
         self.key = None
         self.random_generator = random_generator
-    
-    # def step_forward(self, base, direction):
-    #     """
-    #     Optimization step on manifold
-    #     base : point from the manifold
-    #     direction : gradient descent direction
-    #     """
-    #     return self.retract(base, base + direction)
 
 tree_util.register_pytree_node(Euclidean,
                                Euclidean._tree_flatten,
