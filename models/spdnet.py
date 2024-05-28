@@ -205,6 +205,9 @@ class Triu(nn.Module):
             y = inputs[idx]
         return y
 
+def mean_weights_init(key, shape):
+    w = random.uniform(key, shape=shape) * 1e-3 + 1.0
+    return w / jnp.linalg.norm(w)
 
 class SPDAvgPooling(nn.Module):
     """
@@ -221,7 +224,7 @@ class SPDAvgPooling(nn.Module):
     maxiter: int = 100
     debug: bool = False
     plot_loss_flag: bool = False
-    weights_init: Callable = nn.initializers.uniform()
+    weights_init: Callable = mean_weights_init #nn.initializers.uniform()
 
     @nn.compact
     def __call__(self, inputs):
